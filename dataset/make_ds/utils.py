@@ -27,12 +27,25 @@ def shuffle_dict(my_dict):
     random.shuffle(items)
     return dict(items)
 
-def list_day_year_df(dataframe):
-    pass
 
 def from_day_rad_to_day(day_rad):
     day = (day_rad * 365) / (2 * np.pi)
     return day
+
+
+def list_year_day_df(sorted_dataframe_csv):
+    df_sorted = pd.read_csv(sorted_dataframe_csv, index_col=0)   #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
+    year_day_rad_list = list(df_sorted[["year", "day"]].itertuples(index=False, name=None))
+    year_day_list = [from_day_rad_to_day(year_day_rad_list[i][1]) for i in range(len(year_day_rad_list))]
+    return year_day_rad_list, year_day_list 
+
+def sort_year_day_df(dataframe_csv, sorted_dataframe_csv):
+    df = pd.read_csv(dataframe_csv, index_col=0)    #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
+    df = df.T
+    df_sorted = df.sort_values(by=["year", "day_rad"])
+    df_sorted = df_sorted.T
+    df_sorted.to_csv(sorted_dataframe_csv)
+    return None
 
 
 def triplets_generation_check(triplets_dataset_file):
@@ -48,7 +61,7 @@ def triplets_generation_check(triplets_dataset_file):
 
 
 def make_ds(variable, input_float_directory, flag_complete=1, flag_toy=0):
-    from make_float_ds import make_pandas_df, make_pandas_toy_df
+    from make_ds_float import make_pandas_df, make_pandas_toy_df
 
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
@@ -65,26 +78,8 @@ def make_ds(variable, input_float_directory, flag_complete=1, flag_toy=0):
     return
 
 
-def make_ds_low_res(variable, path_input_csv, name_input_csv, flag_complete=1, flag_toy=0):
-    from make_float_ds import make_dataset_lower_resolution
-
-    if not os.path.exists(f"../{variable}/"):
-        os.mkdir(f"../{variable}/")
-
-    if flag_complete and not os.path.exists(f"../{variable}/{name_input_csv}_20_low_res.csv"):
-        print("hello making complete ds low res...")
-        make_dataset_lower_resolution(path_input_csv, name_input_csv, variable, flag_complete)
-        print("superfloat complete ds low res created")
-
-    if flag_toy and not os.path.exists(f"../{variable}/{name_input_csv}_20_low_res.csv"):
-        print("hello making toy ds low res...")
-        make_dataset_lower_resolution(path_input_csv, name_input_csv, variable, flag_complete)
-        print("superfloat toy ds low res created")
-    return
-
-
 def make_ds_triplets(variable, path_input_csv, name_input_csv, flag_complete=1, flag_toy=0):
-    from make_float_ds import make_dataset_triplets
+    from make_ds_float import make_dataset_triplets
 
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")

@@ -136,6 +136,7 @@ def make_dict_single_float(path, date_time, variable):
     doxy = discretize(pres_doxy_df, doxy_df, max_pres, interval)
     variable = discretize(pres_variable_df, variable_df, max_pres, interval)
     name_float = path.split("/")[-1][:-3]
+    print("name float", name_float)
     if temp is None or psal is None or doxy is None or variable is None:
     #if variable is None:
         return dict(), 0
@@ -190,21 +191,43 @@ def make_toy_dataset(path_float, variable):
     name_list = pd.read_csv(path_float + '/Float_Index.txt', header=None).to_numpy()[:, 0].tolist()
     datetime_list = pd.read_csv(path_float + '/Float_Index.txt', header=None).to_numpy()[:, 3].tolist()
     dict_ds = dict()
+    dict_ds_removed = dict()
     for i in range(int(np.size(name_list) / 50)):
         path = path_float + "/" + name_list[i]
         if not os.path.exists(path):
             continue
         date_time = datetime_list[i]
         dict_single_float, flag = make_dict_single_float(path, date_time, variable)
+        print("dict single float", len(dict_single_float))
+        print("single float keys", dict_single_float.keys())
+        if flag == 1:
+            dict_ds = {**dict_ds, **dict_single_float}
+        if flag == 0:
+            dict_ds_removed = {**dict_ds_removed, **dict_single_float}
         dict_ds = {**dict_ds, **dict_single_float}
-    return dict_ds
+    return dict_ds, dict_ds_removed
 
 
 def make_pandas_toy_df(path_float, variable):
-    dict_ds = make_toy_dataset(path_float, variable)
-    for ds in dict_ds:
+    dict_ds, dict_ds_removed = make_toy_dataset(path_float, variable)
+    train_frac = 0.8
+    train_size = int(train_frac * len(dict_ds))
+    val_size = len(dict_ds) - train_size
+    dict_ds_train = dict_ds.copy()
+    dict_ds_test = dict(list(dict_ds.items())[:val_size])
+    for key_test in dict_ds_test.keys():
+        dict_ds_train.pop(key_test, None)
+    print("type dict ds train", type(dict_ds_train))
+    print("len dict train", len(dict_ds_train))
+    for ds in dict_ds_train.items():
+        print("ds type", type(ds))
+        print("ds", ds)
+        pd_ds = pd.DataFrame(ds[1], index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
+        os.makedirs(f'../{variable}/{ds[0]}', exist_ok=True)
+        pd_ds.to_csv(f'../{variable}/{ds[0]}/toy_ds_sf_train.csv')
+    for ds in dict_ds_test:
         pd_ds = pd.DataFrame(ds, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-        pd_ds.to_csv(f'../{variable}/{ds.keys()[0]}/toy_ds_sf.csv')
+        pd_ds.to_csv(f'../{variable}/{ds.keys()[0]}/toy_ds_sf_test.csv')
     return
 
 

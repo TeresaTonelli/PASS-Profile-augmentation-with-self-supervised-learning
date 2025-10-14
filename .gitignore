@@ -1,0 +1,10 @@
+#folders
+
+
+# sh files dataset 
+make_ds.2*
+make_ds_outputs/
+CHLA/
+NITRATE/
+
+#sh files src

@@ -6,7 +6,7 @@ import torch
 import pandas as pd
 
 # Setting the computation device
-from utils import make_ds, make_ds_low_res, make_ds_triplets, triplets_generation_check
+from utils import make_ds, make_ds_triplets, triplets_generation_check
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(f"We will use {device}")
@@ -15,8 +15,8 @@ random.seed(123)
 
 # ===== Create the parser
 parser = argparse.ArgumentParser()
-parser.add_argument('--training_folder', type=str, default="STint_FLOAT", choices=["STint_FLOAT"])
-parser.add_argument('--input_float_directory', type=str, default='/leonardo_scratch/large/userexternal/ttonelli/OGS/STint_FLOAT/SUPERFLOAT')
+parser.add_argument('--training_folder', type=str, default="SSint_FLOAT", choices=["SSint_FLOAT"])
+parser.add_argument('--input_float_directory', type=str, default='/leonardo_scratch/large/userexternal/ttonelli/OGS/SSint_FLOAT/SUPERFLOAT')
 parser.add_argument('--flag_toy', type=bool, default=False)
 parser.add_argument('--variable', type=str, default="NITRATE", choices=["NITRATE", "CHLA", "BBP700"])
 
@@ -42,7 +42,7 @@ print(f"The dataset used is {training_folder}\n"
 #part2.to_csv(os.path.abspath(os.path.join("..", variable, "toy_ds_sf_20_triplets_test.csv")), index=False)
 
 
-#make_ds(variable=variable, input_float_directory=input_float_directory, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+make_ds(variable=variable, input_float_directory=input_float_directory, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 #path_input_csv = os.path.abspath(os.path.join("..", variable))
 #name_input_csv = "toy_ds_sf"
 #path_input_low_res_csv = os.path.abspath(os.path.join("..", variable))
