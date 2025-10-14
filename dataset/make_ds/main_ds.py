@@ -6,7 +6,7 @@ import torch
 import pandas as pd
 
 # Setting the computation device
-from utils import make_ds, make_ds_triplets, triplets_generation_check
+from utils import make_ds, make_ds_float_devices, make_ds_time_sort, make_ds_triplets, triplets_generation_check
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(f"We will use {device}")
@@ -43,8 +43,13 @@ print(f"The dataset used is {training_folder}\n"
 
 
 make_ds(variable=variable, input_float_directory=input_float_directory, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
-#path_input_csv = os.path.abspath(os.path.join("..", variable))
-#name_input_csv = "toy_ds_sf"
+path_input_csv = os.path.abspath(os.path.join("..", variable))
+name_input_csv = "toy_ds_sf"
+name_input_time_sort = "toy_ds_sf_time_sorted"
+csv_data_directory = os.path.abspath(os.path.join("..", variable, name_input_csv + ".csv"))
+make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, name_input_time_sort + ".csv")), 
+                  flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 #path_input_low_res_csv = os.path.abspath(os.path.join("..", variable))
 #name_input_low_res_csv = "toy_ds_sf_20_low_res"
 #make_ds_low_res(variable, path_input_csv, name_input_csv, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)

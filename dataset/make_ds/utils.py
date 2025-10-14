@@ -28,26 +28,6 @@ def shuffle_dict(my_dict):
     return dict(items)
 
 
-def from_day_rad_to_day(day_rad):
-    day = (day_rad * 365) / (2 * np.pi)
-    return day
-
-
-def list_year_day_df(sorted_dataframe_csv):
-    df_sorted = pd.read_csv(sorted_dataframe_csv, index_col=0)   #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
-    year_day_rad_list = list(df_sorted[["year", "day"]].itertuples(index=False, name=None))
-    year_day_list = [from_day_rad_to_day(year_day_rad_list[i][1]) for i in range(len(year_day_rad_list))]
-    return year_day_rad_list, year_day_list 
-
-def sort_year_day_df(dataframe_csv, sorted_dataframe_csv):
-    df = pd.read_csv(dataframe_csv, index_col=0)    #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
-    df = df.T
-    df_sorted = df.sort_values(by=["year", "day_rad"])
-    df_sorted = df_sorted.T
-    df_sorted.to_csv(sorted_dataframe_csv)
-    return None
-
-
 def triplets_generation_check(triplets_dataset_file):
     df = pd.read_csv(triplets_dataset_file, header=0)
     search_string = "SD6903823_002"
@@ -76,6 +56,45 @@ def make_ds(variable, input_float_directory, flag_complete=1, flag_toy=0):
         make_pandas_toy_df(input_float_directory, variable=variable)
         print("superfloat toy ds created")
     return
+
+
+def make_ds_float_devices(variable, csv_data_directory, flag_complete=1, flag_toy=0):
+    from make_ds_float import make_per_float_df, make_per_float_toy_df
+
+    if not os.path.exists(f"../{variable}/"):
+        os.mkdir(f"../{variable}/")
+
+    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/float_ds_df_train.csv"):
+        print("hello making complete ds...")
+        make_per_float_df(csv_data_directory, variable)
+        print("superfloat complete ds float devices created")
+
+    if flag_toy and not os.path.exists(f"../{variable}/SD6903823/toy_ds_df.csv"):
+        print("hello making toy ds device float...")
+        make_per_float_toy_df(csv_data_directory, variable)
+        print("superfloat toy ds float devices created")
+    return
+
+
+def make_ds_time_sort(variable, var_data_directory, sorted_float_csv, flag_complete=1, flag_toy=0):
+    from make_ds_float import make_sorted_year_day_df, list_year_day_df
+
+    if not os.path.exists(f"../{variable}/"):
+        os.mkdir(f"../{variable}/")
+
+    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/float_ds_sf_train_time_sorted.csv"):
+        print("hello making complete time order ds...")
+        make_sorted_year_day_df(var_data_directory, variable)
+        print(list_year_day_df(sorted_float_csv)[0])
+        print(list_year_day_df(sorted_float_csv)[1])
+        print("superfloat complete ds time order created")
+
+    if flag_toy and not os.path.exists(f"../{variable}/SD6903823/toy_ds_sf_time_sorted.csv"):
+        print("hello making toy ds time order float...")
+        make_sorted_year_day_df(var_data_directory, variable)
+        print(list_year_day_df(sorted_float_csv)[0])
+        print(list_year_day_df(sorted_float_csv)[1])
+        print("superfloat toy ds time order created")
 
 
 def make_ds_triplets(variable, path_input_csv, name_input_csv, flag_complete=1, flag_toy=0):

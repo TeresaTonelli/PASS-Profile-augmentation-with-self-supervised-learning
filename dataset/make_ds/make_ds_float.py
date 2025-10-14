@@ -165,12 +165,8 @@ def make_dataset(path_float, variable):
 
 def make_pandas_df(path_float, variable):
     dict_ds_accepted, dict_ds_removed = make_dataset(path_float, variable)
-    print("ds accepted keys", dict_ds_accepted.keys())
-    print("ds removed keys", dict_ds_removed.keys())
     dict_ds_accepted = shuffle_dict(dict_ds_accepted)
-    for dict_rem in dict_ds_removed:
-        pd_ds_removed = pd.DataFrame(dict_rem, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-        pd_ds_removed.to_csv(f'../{variable}/{dict_rem.keys()[0]}/float_ds_sf_removed.csv')
+    pd_ds_removed = pd.DataFrame(dict_ds_removed, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
     train_frac = 0.8
     train_size = int(train_frac * len(dict_ds_accepted))
     val_size = len(dict_ds_accepted) - train_size
@@ -178,12 +174,11 @@ def make_pandas_df(path_float, variable):
     dict_ds_accepted_test = dict(list(dict_ds_accepted.items())[:val_size])
     for key_test in dict_ds_accepted_test.keys():
         dict_ds_accepted_train.pop(key_test, None)
-    for dict_train in dict_ds_accepted_train:
-        pd_ds_accepted_train = pd.DataFrame(dict_train, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-        pd_ds_accepted_train.to_csv(f'../{variable}/{dict_train.keys()[0]}/float_ds_sf_train.csv')
-    for dict_test in dict_ds_accepted_test:
-        pd_ds_accepted_test = pd.DataFrame(dict_test, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-        pd_ds_accepted_test.to_csv(f'../{variable}/{dict_test.keys()[0]}/float_ds_sf_test.csv')
+    pd_ds_accepted_train = pd.DataFrame(dict_ds_accepted_train, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
+    pd_ds_accepted_test = pd.DataFrame(dict_ds_accepted_test, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
+    pd_ds_accepted_train.to_csv(f'../{variable}/float_ds_sf_train.csv')
+    pd_ds_accepted_test.to_csv(f'../{variable}/float_ds_sf_test.csv')
+    pd_ds_removed.to_csv(f'../{variable}/float_ds_sf_removed.csv')
     return
 
 
@@ -191,44 +186,73 @@ def make_toy_dataset(path_float, variable):
     name_list = pd.read_csv(path_float + '/Float_Index.txt', header=None).to_numpy()[:, 0].tolist()
     datetime_list = pd.read_csv(path_float + '/Float_Index.txt', header=None).to_numpy()[:, 3].tolist()
     dict_ds = dict()
-    dict_ds_removed = dict()
     for i in range(int(np.size(name_list) / 50)):
         path = path_float + "/" + name_list[i]
         if not os.path.exists(path):
             continue
         date_time = datetime_list[i]
         dict_single_float, flag = make_dict_single_float(path, date_time, variable)
-        print("dict single float", len(dict_single_float))
-        print("single float keys", dict_single_float.keys())
-        if flag == 1:
-            dict_ds = {**dict_ds, **dict_single_float}
-        if flag == 0:
-            dict_ds_removed = {**dict_ds_removed, **dict_single_float}
         dict_ds = {**dict_ds, **dict_single_float}
-    return dict_ds, dict_ds_removed
+    return dict_ds
 
 
 def make_pandas_toy_df(path_float, variable):
-    dict_ds, dict_ds_removed = make_toy_dataset(path_float, variable)
-    train_frac = 0.8
-    train_size = int(train_frac * len(dict_ds))
-    val_size = len(dict_ds) - train_size
-    dict_ds_train = dict_ds.copy()
-    dict_ds_test = dict(list(dict_ds.items())[:val_size])
-    for key_test in dict_ds_test.keys():
-        dict_ds_train.pop(key_test, None)
-    print("type dict ds train", type(dict_ds_train))
-    print("len dict train", len(dict_ds_train))
-    for ds in dict_ds_train.items():
-        print("ds type", type(ds))
-        print("ds", ds)
-        pd_ds = pd.DataFrame(ds[1], index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-        os.makedirs(f'../{variable}/{ds[0]}', exist_ok=True)
-        pd_ds.to_csv(f'../{variable}/{ds[0]}/toy_ds_sf_train.csv')
-    for ds in dict_ds_test:
-        pd_ds = pd.DataFrame(ds, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-        pd_ds.to_csv(f'../{variable}/{ds.keys()[0]}/toy_ds_sf_test.csv')
+    dict_ds = make_toy_dataset(path_float, variable)
+    pd_ds = pd.DataFrame(dict_ds, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
+    pd_ds.to_csv(f'../{variable}/toy_ds_sf.csv')
     return
+
+
+def make_per_float_df(full_floats_df_train, full_floats_df_test):
+    list_full_floats = []
+    list_devices_float = []
+    pass
+
+
+def make_per_float_toy_df(full_floats_ds, variable):
+    df = pd.read_csv(full_floats_ds, header=0)
+    list_full_floats = [name for name in df.columns if name != '']
+    print("list full floats", list_full_floats)
+    list_devices_float = [name.split("_")[0] for name in list_full_floats]
+    list_devices_float = list(dict.fromkeys(list_devices_float))
+    list_devices_float.remove('Unnamed: 0')
+    print("list devices floats", list_devices_float)
+    if df.columns[0] == '':
+        df = df.drop(df.columns[0], axis=1)
+    for float_device in list_devices_float:
+        print("float device number", float_device)
+        filtered_df = df.loc[:, df.columns.str.startswith(float_device)]
+        filtered_df.insert(0, 'Unnamed: 0', ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', 'CHLA'])
+        os.makedirs(f'../{variable}/{float_device}', exist_ok=True)
+        filtered_df.to_csv(f'../{variable}/{float_device}/toy_ds_df.csv', index=False)
+    return None
+
+
+def from_day_rad_to_day(day_rad):
+    day = (day_rad * 365) / (2 * np.pi)
+    return day
+
+def list_year_day_df(sorted_dataframe_csv):
+    df_sorted = pd.read_csv(sorted_dataframe_csv, index_col=0)   #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
+    year_day_rad_list = list(df_sorted[["year", "day"]].itertuples(index=False, name=None))
+    year_day_list = [from_day_rad_to_day(year_day_rad_list[i][1]) for i in range(len(year_day_rad_list))]
+    return year_day_rad_list, year_day_list 
+
+def make_sorted_year_day_df(dataframe_variable_dir, variable):
+    for subfolder in os.listdir(dataframe_variable_dir):
+        if subfolder == 'Unnamed: 0':
+            continue
+        subfolder_path = os.path.join(dataframe_variable_dir, subfolder)
+        print("subfolder path", subfolder_path)
+        if os.path.isdir(subfolder_path):
+            for filename in os.listdir(subfolder_path):
+                print("filename", filename)
+                df = pd.read_csv(os.path.join(subfolder_path, filename), index_col=0)    #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
+                df = df.T
+                df_sorted = df.sort_values(by=['year', 'day_rad'])
+                df_sorted = df_sorted.T
+                df_sorted.to_csv(f'/{subfolder_path}/toy_ds_df_time_sorted.csv')
+    return None
 
 
 def make_data_n_tuple(tensor_low_res_str, i):
