@@ -257,33 +257,24 @@ def make_sorted_year_day_df(dataframe_variable_dir, variable):
 
 
 def make_data_n_tuple(dataframe_row, type, i):
-    tensors = []
-    for cell in dataframe_row:
-        # Clean the string and convert to float list
-        clean = cell.replace("tensor([", "").replace("])", "")
-        values = [float(x.strip()) for x in clean.split(",")]
-        tensor = torch.tensor(values).unsqueeze(1)  
-        tensors.append(tensor)
-    full_tensor = torch.cat(tensors, dim=1)
-    output_n_tuples = [full_tensor[:, j:j+7] for j in range(0, full_tensor.shape[1] - 7 + 1)]
-    return output_n_tuples[i]  # return the i-th 7-column slice
-    #if type == "scalar":
-    #    full_scalar = []
-    #    for cell in dataframe_row:
-    #        values = [float(x.strip()) for x in cell.split(",")]
-    #        print("values", values)
-    #        full_scalar.append(values)
-    #    output_n_tuples = [full_scalar[j:j+7] for j in range(1, len(dataframe_row.shape[0]) -7 +1)]
-    #elif type == "tensor":
-    #    full_tensor = torch.zeros([200, 1])
-    #    for cell in dataframe_row:
-    #        clean = cell.replace("tensor([", "").replace("])", "")
-    #        values = [float(x.strip()) for x in clean.split(",")]
-    #        tensor = torch.tensor(values).unsqueeze(1)
-    #        full_tensor = torch.cat((full_tensor, tensor), dim=1)
-    #    print(dataframe_row.shape)
-    #    output_n_tuples = [full_tensor[:, j:j+7] for j in range(1, dataframe_row.shape[0] -7 +1)]
-    #    return output_n_tuples[i]
+    if type == "scalar":
+        full_scalar = []
+        for cell in dataframe_row:
+            values = [float(x.strip()) for x in cell.split(",")]
+            print("values", values)
+            full_scalar.append(values)
+        output_n_tuples = [full_scalar[j:j+7] for j in range(1, len(dataframe_row.shape[0]) -7 +1)]
+    if type == "tensor":
+        tensors = []
+        for cell in dataframe_row:
+            # Clean the string and convert to float list
+            clean = cell.replace("tensor([", "").replace("])", "")
+            values = [float(x.strip()) for x in clean.split(",")]
+            tensor = torch.tensor(values).unsqueeze(1)  
+            tensors.append(tensor)
+        full_tensor = torch.cat(tensors, dim=1)
+        output_n_tuples = [full_tensor[:, j:j+7] for j in range(0, full_tensor.shape[1] - 7 + 1)]
+        return output_n_tuples[i]  # return the i-th 7-column slice
 
 
 def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
@@ -291,18 +282,17 @@ def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_co
 
     list_all_variables = []
     feature_names = []
-
-    for i in range(6):  # 6 windows (i from 0 to 5)
-        for feature in list_features + [variable]:
-            row = df.loc[feature]
+ 
+    for feature in list_features + [variable]:
+        row = df.loc[feature]
+        list_feature = []
+        for i in range(6): 
             new_tensor = make_data_n_tuple(row, "tensor", i)  # shape [200, 7]
-            
-            # Optional: flatten the tensor if needed
-            flat_tensor = new_tensor.flatten().tolist()  # shape [1400]
-
-            list_all_variables.append(flat_tensor)
-            feature_names.append(f"{feature}_win{i}")
-
+            print("new tensor", new_tensor[:4, :3])
+            print("new_tensor flatten", new_tensor.flatten()[:12])
+            list_feature.append(new_tensor.flatten())
+        feature_names.append(f"{feature}")
+        list_all_variables.append(list_feature)
     # Create final DataFrame
     df_final = pd.DataFrame(list_all_variables, index=feature_names)
     df_final.columns = [f"t{j}" for j in range(df_final.shape[1])]  # Optional: name columns t0, t1, ...
