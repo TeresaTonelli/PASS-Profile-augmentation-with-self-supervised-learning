@@ -233,9 +233,10 @@ def from_day_rad_to_day(day_rad):
     return day
 
 def list_year_day_df(sorted_dataframe_csv):
-    df_sorted = pd.read_csv(sorted_dataframe_csv, index_col=0)   #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
-    year_day_rad_list = list(df_sorted[["year", "day"]].itertuples(index=False, name=None))
-    year_day_list = [from_day_rad_to_day(year_day_rad_list[i][1]) for i in range(len(year_day_rad_list))]
+    df_sorted = pd.read_csv(sorted_dataframe_csv, index_col=0)   #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE
+    df_sorted = df_sorted.T 
+    year_day_rad_list = list(df_sorted[["year", "day_rad"]].itertuples(index=False, name=None))
+    year_day_list = [from_day_rad_to_day(float(year_day_rad_list[i][1])) for i in range(len(year_day_rad_list))]
     return year_day_rad_list, year_day_list 
 
 def make_sorted_year_day_df(dataframe_variable_dir, variable):
@@ -258,21 +259,28 @@ def make_sorted_year_day_df(dataframe_variable_dir, variable):
 def make_data_n_tuple(tensor_low_res_str, i):
     clean_tensor_str = tensor_low_res_str.replace("tensor([", "").replace("])", "")
     tensor_values = [float(x.strip()) for x in clean_tensor_str.split(",")]
+    print("len tensor values", len(tensor_values))
     tensor = torch.tensor(tensor_values)
-    triplets_list = [tensor.unfold(0, 7, 3)[i].clone() for i in range(2)]
+    triplets_list = [tensor.unfold(0, 7, 1)[i].clone() for i in range(len(tensor_values) -7 +1)]
+    print("len triplets list", len(triplets_list))
+    assert len(triplets_list) == 194
     return triplets_list[i]
 
 
-def make_pandas_n_tuple_df(path, name_csv_file, variable, flag_complete=1):
+def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
     df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
-    transformations = [lambda x: make_data_n_tuple(x, 0), 
-                       lambda x: make_data_n_tuple(x, 1)]  #,
-                       #lambda x: generate_data_triplets(x, 2)]    
+    transformations = [lambda x: make_data_n_tuple(x, 0), lambda x: make_data_n_tuple(x, 1), 
+                       lambda x: make_data_n_tuple(x, 2), lambda x: make_data_n_tuple(x, 3), 
+                       lambda x: make_data_n_tuple(x, 4), lambda x: make_data_n_tuple(x, 5)]     
     transformed_cols = []
     for func in transformations:
         df_trans = df.copy()
+        for feature in list_features:
+            df_trans.loc[feature] = df.loc[feature].apply(func)
         df_trans.loc[variable] = df.loc[variable].apply(func)
         transformed_cols.append(df_trans)
+    print("len transformed columns", len(transformed_cols))
     df_final = pd.concat(transformed_cols, axis=1)
-    df_final.to_csv(f'../{variable}/{name_csv_file[:-8]}_triplets.csv')
+    df_final.to_csv(f'{path}/{name_csv_file}_n_tuple.csv')
+    print("df final shape", df_final.shape)
     return None

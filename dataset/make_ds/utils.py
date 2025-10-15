@@ -82,14 +82,14 @@ def make_ds_time_sort(variable, var_data_directory, sorted_float_csv, flag_compl
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/float_ds_sf_train_time_sorted.csv"):
+    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/float_ds_df_train_time_sorted.csv"):
         print("hello making complete time order ds...")
         make_sorted_year_day_df(var_data_directory, variable)
         print(list_year_day_df(sorted_float_csv)[0])
         print(list_year_day_df(sorted_float_csv)[1])
         print("superfloat complete ds time order created")
 
-    if flag_toy and not os.path.exists(f"../{variable}/SD6903823/toy_ds_sf_time_sorted.csv"):
+    if flag_toy and not os.path.exists(f"../{variable}/SD6903823/toy_ds_df_time_sorted.csv"):
         print("hello making toy ds time order float...")
         make_sorted_year_day_df(var_data_directory, variable)
         print(list_year_day_df(sorted_float_csv)[0])
@@ -97,19 +97,19 @@ def make_ds_time_sort(variable, var_data_directory, sorted_float_csv, flag_compl
         print("superfloat toy ds time order created")
 
 
-def make_ds_triplets(variable, path_input_csv, name_input_csv, flag_complete=1, flag_toy=0):
-    from make_ds_float import make_dataset_triplets
+def make_ds_n_tuples(variable, list_features, path_input_csv, name_input_csv, flag_complete=1, flag_toy=0):
+    from make_ds_float import make_pandas_n_tuple_df
 
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/{name_input_csv[:-8]}_triplets.csv"):
-        print("hello making complete ds...")
-        make_dataset_triplets(path_input_csv, name_input_csv, variable, flag_complete)
-        print("superfloat complete ds created")
+    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/{name_input_csv}_n_tuples.csv"):
+        print("hello making complete n_tuples ds...")
+        make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
+        print("superfloat complete ds n_tuples created")
 
-    if flag_toy and not os.path.exists(f'../{variable}/{name_input_csv[:-8]}_triplets.csv'):
-        print("hello making toy ds triplets...")
-        make_dataset_triplets(path_input_csv, name_input_csv, variable, flag_complete)
-        print("superfloat toy ds triplets created")
+    if flag_toy and not os.path.exists(f'../{variable}/SD6903823/{name_input_csv}_n_tuples.csv'):
+        print("hello making toy ds n_tuples...")
+        make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
+        print("superfloat toy ds n_tuples created")
     return
