@@ -256,31 +256,104 @@ def make_sorted_year_day_df(dataframe_variable_dir, variable):
     return None
 
 
-def make_data_n_tuple(tensor_low_res_str, i):
-    clean_tensor_str = tensor_low_res_str.replace("tensor([", "").replace("])", "")
-    tensor_values = [float(x.strip()) for x in clean_tensor_str.split(",")]
-    print("len tensor values", len(tensor_values))
-    tensor = torch.tensor(tensor_values)
-    triplets_list = [tensor.unfold(0, 7, 1)[i].clone() for i in range(len(tensor_values) -7 +1)]
-    print("len triplets list", len(triplets_list))
-    assert len(triplets_list) == 194
-    return triplets_list[i]
+def make_data_n_tuple(dataframe_row, type, i):
+    tensors = []
+    for cell in dataframe_row:
+        # Clean the string and convert to float list
+        clean = cell.replace("tensor([", "").replace("])", "")
+        values = [float(x.strip()) for x in clean.split(",")]
+        tensor = torch.tensor(values).unsqueeze(1)  
+        tensors.append(tensor)
+    full_tensor = torch.cat(tensors, dim=1)
+    output_n_tuples = [full_tensor[:, j:j+7] for j in range(0, full_tensor.shape[1] - 7 + 1)]
+    return output_n_tuples[i]  # return the i-th 7-column slice
+    #if type == "scalar":
+    #    full_scalar = []
+    #    for cell in dataframe_row:
+    #        values = [float(x.strip()) for x in cell.split(",")]
+    #        print("values", values)
+    #        full_scalar.append(values)
+    #    output_n_tuples = [full_scalar[j:j+7] for j in range(1, len(dataframe_row.shape[0]) -7 +1)]
+    #elif type == "tensor":
+    #    full_tensor = torch.zeros([200, 1])
+    #    for cell in dataframe_row:
+    #        clean = cell.replace("tensor([", "").replace("])", "")
+    #        values = [float(x.strip()) for x in clean.split(",")]
+    #        tensor = torch.tensor(values).unsqueeze(1)
+    #        full_tensor = torch.cat((full_tensor, tensor), dim=1)
+    #    print(dataframe_row.shape)
+    #    output_n_tuples = [full_tensor[:, j:j+7] for j in range(1, dataframe_row.shape[0] -7 +1)]
+    #    return output_n_tuples[i]
 
 
 def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
     df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
-    transformations = [lambda x: make_data_n_tuple(x, 0), lambda x: make_data_n_tuple(x, 1), 
-                       lambda x: make_data_n_tuple(x, 2), lambda x: make_data_n_tuple(x, 3), 
-                       lambda x: make_data_n_tuple(x, 4), lambda x: make_data_n_tuple(x, 5)]     
-    transformed_cols = []
-    for func in transformations:
-        df_trans = df.copy()
-        for feature in list_features:
-            df_trans.loc[feature] = df.loc[feature].apply(func)
-        df_trans.loc[variable] = df.loc[variable].apply(func)
-        transformed_cols.append(df_trans)
-    print("len transformed columns", len(transformed_cols))
-    df_final = pd.concat(transformed_cols, axis=1)
-    df_final.to_csv(f'{path}/{name_csv_file}_n_tuple.csv')
-    print("df final shape", df_final.shape)
-    return None
+
+    list_all_variables = []
+    feature_names = []
+
+    for i in range(6):  # 6 windows (i from 0 to 5)
+        for feature in list_features + [variable]:
+            row = df.loc[feature]
+            new_tensor = make_data_n_tuple(row, "tensor", i)  # shape [200, 7]
+            
+            # Optional: flatten the tensor if needed
+            flat_tensor = new_tensor.flatten().tolist()  # shape [1400]
+
+            list_all_variables.append(flat_tensor)
+            feature_names.append(f"{feature}_win{i}")
+
+    # Create final DataFrame
+    df_final = pd.DataFrame(list_all_variables, index=feature_names)
+    df_final.columns = [f"t{j}" for j in range(df_final.shape[1])]  # Optional: name columns t0, t1, ...
+
+    # Save to CSV
+    df_final.to_csv(os.path.join(path, f"{name_csv_file}_n_tuple.csv"))
+    print("df_final shape:", df_final.shape)
+
+    return df_final
+
+
+
+
+    #df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
+
+    ## Transformations for i = 0 to 5 (6 windows)
+    #transformations = [lambda row: make_data_n_tuple(row, "tensor", i) for i in range(6)]
+
+    #list_all_variables = []
+    #feature_names = []
+    #for func in transformations:
+
+    #    for feature in list_features + [variable]:
+    #        feature_names.append(feature)
+    #        new_tensor = func(df.loc[feature])  
+    #        print("new tensor shape", new_tensor.shape)
+    #        print("portion of the tensor", new_tensor[:4, :3])
+
+    #        list_all_variables.append(new_tensor)
+
+    ## Concatenate along columns (axis=1)
+    #df_final = pd.DataFrame(list_all_variables, index=feature_names)
+
+    ## Save
+    #df_final.to_csv(f'{path}/{name_csv_file}_n_tuple.csv')
+    #print("df final shape", df_final.shape)
+
+    #return None
+
+
+    #df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
+    #transformations = [lambda x: make_data_n_tuple(x, "tensor", 0), lambda x: make_data_n_tuple(x, "tensor", 1), 
+    #                   lambda x: make_data_n_tuple(x, "tensor", 2), lambda x: make_data_n_tuple(x, "tensor", 3), 
+    #                   lambda x: make_data_n_tuple(x, "tensor", 4), lambda x: make_data_n_tuple(x, "tensor", 5)]     
+    #transformed_cols = []
+    #for func in transformations:
+    #    df_trans = df.copy()
+    #    for feature in list_features + [variable]:
+    #        df_trans.loc[feature] = func(df.loc[feature])
+    #    transformed_cols.append(df_trans)
+    #df_final = pd.concat(transformed_cols, axis=1)
+    #df_final.to_csv(f'{path}/{name_csv_file}_n_tuple.csv')
+    #print("df final shape", df_final.shape)
+    #return None

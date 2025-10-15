@@ -51,7 +51,7 @@ make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_to
 make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, 'SD6903823',name_input_time_sort + ".csv")), 
                   flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
-float_devices = ['SD6901765','SD6903823', 'SR6903823']
+float_devices = ['SD6903823']
 list_features = ['temp', 'psal', 'doxy']
 for device in float_devices:
     path_input_time_sorted = os.path.abspath(os.path.join("..", variable, device))
