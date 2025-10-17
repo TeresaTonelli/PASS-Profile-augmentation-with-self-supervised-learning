@@ -260,10 +260,12 @@ def make_data_n_tuple(dataframe_row, type, i):
     if type == "scalar":
         full_scalar = []
         for cell in dataframe_row:
-            values = [float(x.strip()) for x in cell.split(",")]
-            print("values", values)
-            full_scalar.append(values)
-        output_n_tuples = [full_scalar[j:j+7] for j in range(1, len(dataframe_row.shape[0]) -7 +1)]
+            value = float(cell)
+            full_scalar.append(value)
+        output_n_tuples = [full_scalar[j:j+7] for j in range(0, dataframe_row.shape[0] -7 +1)]    #prima c'era range(1, ...)
+        #print("scalar shape", dataframe_row.shape[0] -7 +1)
+        #print("output n tuples scalar", output_n_tuples[1])
+        #print("len output_n_tuples", len(output_n_tuples))
     if type == "tensor":
         tensors = []
         for cell in dataframe_row:
@@ -274,11 +276,25 @@ def make_data_n_tuple(dataframe_row, type, i):
             tensors.append(tensor)
         full_tensor = torch.cat(tensors, dim=1)
         output_n_tuples = [full_tensor[:, j:j+7] for j in range(0, full_tensor.shape[1] - 7 + 1)]
-        return output_n_tuples[i]  # return the i-th 7-column slice
+        #print("tensor shape", full_tensor.shape[1] - 7 + 1)
+        #print("len output_n_tuples", len(output_n_tuples))
+    return output_n_tuples[i]  # return the i-th 7-column slice
+
+
+def time_interval_check(day_tuple):
+    return tuple(from_day_rad_to_day(float(day_tuple[j+1])) - from_day_rad_to_day(float(day_tuple[j])) for j in range(len(day_tuple)-1) )
+
+
+def is_arithmetic_sequence(tup):
+    diffs = [tup[i+1] - tup[i] for i in range(len(tup) - 1)]
+    print("diffs", diffs)
+    print("diffs days int", [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
+    return all(np.isclose(d, diffs[0]) for d in diffs)
 
 
 def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
     df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
+    print("df columns", df.columns)
 
     list_all_variables = []
     feature_names = []
@@ -286,20 +302,33 @@ def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_co
     for feature in list_features + [variable]:
         row = df.loc[feature]
         list_feature = []
-        for i in range(6): 
-            new_tensor = make_data_n_tuple(row, "tensor", i)  # shape [200, 7]
-            print("new tensor", new_tensor[:4, :3])
-            print("new_tensor flatten", new_tensor.flatten()[:12])
-            list_feature.append(new_tensor.flatten())
+        if feature in ["year", "day_rad", "lat", "lon"]:
+            feature_type = "scalar"
+        elif feature in ["temp", "psal", "doxy", "CHLA", "NITRATE", "BBP700"]:
+            feature_type = "tensor"
+        m = df.shape[1] -7 +1
+        for i in range(m): 
+            new_tensor = make_data_n_tuple(row, feature_type, i)
+            if feature_type == "tensor": 
+                #print("new tensor", new_tensor[:4, :3])
+                #print("new_tensor flatten", new_tensor.flatten()[:12])
+                list_feature.append(new_tensor.flatten())
+            elif feature_type == "scalar":
+                #print("new tensor", new_tensor)
+                list_feature.append(new_tensor)
         feature_names.append(f"{feature}")
         list_all_variables.append(list_feature)
     # Create final DataFrame
     df_final = pd.DataFrame(list_all_variables, index=feature_names)
-    df_final.columns = [f"t{j}" for j in range(df_final.shape[1])]  # Optional: name columns t0, t1, ...
+    df_final.columns = [f"{df.columns[0].split("_")[0]}_{j}" for j in range(df_final.shape[1])]  
+
+    feature_day_row = df_final.loc['day_rad']
+    arithmetic_mask = feature_day_row.apply(is_arithmetic_sequence)
+    df_final_time_step = df_final.loc[:, arithmetic_mask]
 
     # Save to CSV
-    df_final.to_csv(os.path.join(path, f"{name_csv_file}_n_tuple.csv"))
-    print("df_final shape:", df_final.shape)
+    df_final_time_step.to_csv(os.path.join(path, f"{name_csv_file}_n_tuple.csv"))
+    print("df_final shape:", df_final_time_step.shape)
 
     return df_final
 

@@ -39,6 +39,21 @@ def triplets_generation_check(triplets_dataset_file):
         print(df[matching_cols].iloc[2, i])
     
 
+def n_tuple_tensors_generation_check(original_dataset_file, time_sorted_dataset_file, n_tuples_dataset_file):
+    df_original = pd.read_csv(original_dataset_file, header=0)
+    print("original features", df_original.index.tolist() )
+    df_time_sorted = pd.read_csv(time_sorted_dataset_file, header=0)
+    df_n_tuples = pd.read_csv(n_tuples_dataset_file, header=0)
+    variables = df_time_sorted.index.tolist()
+    print("variables", variables)
+    print("n tuples tensor temp", df_n_tuples.iloc[0, 1])
+    for i in range(1, 8):
+        print("currect variable", variables[0])
+        print("time sorted tensor", df_time_sorted.iloc[variables[4], i])
+        print("type tensor time sorted", type(df_time_sorted.iloc[variables[4], i]))
+
+
+
 
 def make_ds(variable, input_float_directory, flag_complete=1, flag_toy=0):
     from make_ds_float import make_pandas_df, make_pandas_toy_df
@@ -103,12 +118,12 @@ def make_ds_n_tuples(variable, list_features, path_input_csv, name_input_csv, fl
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/{name_input_csv}_n_tuples.csv"):
+    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/{name_input_csv}_n_tuple.csv"):
         print("hello making complete n_tuples ds...")
         make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
         print("superfloat complete ds n_tuples created")
 
-    if flag_toy and not os.path.exists(f'../{variable}/SD6903823/{name_input_csv}_n_tuples.csv'):
+    if flag_toy and not os.path.exists(f'../{variable}/SD6903823/{name_input_csv}_n_tuple.csv'):
         print("hello making toy ds n_tuples...")
         make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
         print("superfloat toy ds n_tuples created")

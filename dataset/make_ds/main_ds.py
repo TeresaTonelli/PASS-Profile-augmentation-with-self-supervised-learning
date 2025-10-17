@@ -6,7 +6,7 @@ import torch
 import pandas as pd
 
 # Setting the computation device
-from utils import make_ds, make_ds_float_devices, make_ds_time_sort, make_ds_n_tuples, triplets_generation_check
+from utils import make_ds, make_ds_float_devices, make_ds_time_sort, make_ds_n_tuples, triplets_generation_check, n_tuple_tensors_generation_check
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(f"We will use {device}")
@@ -51,10 +51,14 @@ make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_to
 make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, 'SD6903823',name_input_time_sort + ".csv")), 
                   flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
-float_devices = ['SD6903823']
-list_features = ['temp', 'psal', 'doxy']
+float_devices = ['SR6903823', 'SD6901765', 'SD6903823']
+list_features = ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy']
 for device in float_devices:
     path_input_time_sorted = os.path.abspath(os.path.join("..", variable, device))
     make_ds_n_tuples(variable, list_features, path_input_time_sorted, name_input_time_sort, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
-#triplets_dataset_file = os.path.abspath(os.path.join("..", variable, "toy_ds_sf_20_triplets.csv"))
-#triplets_generation_check(triplets_dataset_file)
+
+
+#path_original = os.path.abspath(os.path.join("..", variable,  "toy_ds_sf.csv"))
+#path_time_sorted = os.path.abspath(os.path.join("..", variable, float_devices[0], "toy_ds_df_time_sorted.csv"))
+#path_n_tuples = os.path.abspath(os.path.join("..", variable, float_devices[0], "toy_ds_df_time_sorted_n_tuple.csv"))
+#n_tuple_tensors_generation_check(path_original, path_time_sorted, path_n_tuples)
