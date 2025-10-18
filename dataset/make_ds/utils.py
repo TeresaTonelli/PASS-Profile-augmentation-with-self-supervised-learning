@@ -41,16 +41,30 @@ def triplets_generation_check(triplets_dataset_file):
 
 def n_tuple_tensors_generation_check(original_dataset_file, time_sorted_dataset_file, n_tuples_dataset_file):
     df_original = pd.read_csv(original_dataset_file, header=0)
-    print("original features", df_original.index.tolist() )
     df_time_sorted = pd.read_csv(time_sorted_dataset_file, header=0)
     df_n_tuples = pd.read_csv(n_tuples_dataset_file, header=0)
     variables = df_time_sorted.index.tolist()
-    print("variables", variables)
-    print("n tuples tensor temp", df_n_tuples.iloc[0, 1])
+    float_n_tuples_latitude = [float(x.strip()) for x in df_n_tuples.iloc[2, 1].strip("[]").split(",")]
+    #print("float_n_tuples latitudes", float_n_tuples_latitude)
+    #print("n tuples CHLA", df_n_tuples.iloc[7, 1])
+    chla_list = [float(x.strip()) for x in df_n_tuples.iloc[7, 1].strip("[]").split(",")]
+    chla_tensor = torch.tensor(chla_list)
+    #print("chla tensor", chla_tensor)
+    #print("type CHLA", type(chla_tensor))
+    #print("shape CHLA", chla_tensor.shape)
     for i in range(1, 8):
-        print("currect variable", variables[0])
-        print("time sorted tensor", df_time_sorted.iloc[variables[4], i])
-        print("type tensor time sorted", type(df_time_sorted.iloc[variables[4], i]))
+        #print("time sorted latitude", df_time_sorted.iloc[variables[2], i])
+        print("latitude euqality", float_n_tuples_latitude[i-1] == float(df_time_sorted.iloc[variables[2], i]))
+        clean = df_time_sorted.iloc[variables[7], i].replace("tensor([", "").replace("])", "")
+        values = [float(x.strip()) for x in clean.split(",")]
+        tensor = torch.tensor(values)
+        #print("tensor CHLA", tensor)
+        #print("tensor CHLA type", type(tensor))
+        #print("shape CHLA tensor", tensor.shape)
+        #print("type single element tensor", type(chla_tensor[1]))
+        #print("tensor CHLA 1", [chla_tensor[j].item() for j in range(1400) if j%7 == i-1])
+        #print("tensor CHLA 2", tensor.tolist())
+        print("CHLA check equality", [chla_tensor[j].item() for j in range(1400) if j%7 == i-1] == tensor.tolist())
 
 
 
@@ -127,4 +141,24 @@ def make_ds_n_tuples(variable, list_features, path_input_csv, name_input_csv, fl
         print("hello making toy ds n_tuples...")
         make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
         print("superfloat toy ds n_tuples created")
+    return
+
+
+def make_ds_merging(variable, list_devices, path_input_csv, name_input_csv, flag_complete=1, flag_toy=0):
+    from make_ds_float import dataframe_merging
+
+    if not os.path.exists(f"../{variable}/"):
+        os.mkdir(f"../{variable}/")
+
+    if flag_complete and not os.path.exists(f"../{variable}/{name_input_csv}_merged_n_tuple.csv"):
+        print("hello making complete n_tuples merging ds...")
+        list_dataframe_files = []
+        dataframe_merging(list_dataframe_files, path_input_csv, flag_complete)
+        print("superfloat complete ds n_tuples merging created")
+
+    if flag_toy and not os.path.exists(f'../{variable}/{name_input_csv}_merged_n_tuple.csv'):
+        print("hello making toy ds n_tuples merging...")
+        list_dataframe_files = [os.path.abspath(os.path.join("..", variable,  list_devices[j], "toy_ds_df_time_sorted_n_tuple.csv")) for j in range(len(list_devices))]
+        dataframe_merging(list_dataframe_files, path_input_csv, flag_complete)
+        print("superfloat toy ds n_tuples merging created")
     return

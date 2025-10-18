@@ -269,7 +269,6 @@ def make_data_n_tuple(dataframe_row, type, i):
     if type == "tensor":
         tensors = []
         for cell in dataframe_row:
-            # Clean the string and convert to float list
             clean = cell.replace("tensor([", "").replace("])", "")
             values = [float(x.strip()) for x in clean.split(",")]
             tensor = torch.tensor(values).unsqueeze(1)  
@@ -279,10 +278,6 @@ def make_data_n_tuple(dataframe_row, type, i):
         #print("tensor shape", full_tensor.shape[1] - 7 + 1)
         #print("len output_n_tuples", len(output_n_tuples))
     return output_n_tuples[i]  # return the i-th 7-column slice
-
-
-def time_interval_check(day_tuple):
-    return tuple(from_day_rad_to_day(float(day_tuple[j+1])) - from_day_rad_to_day(float(day_tuple[j])) for j in range(len(day_tuple)-1) )
 
 
 def is_arithmetic_sequence(tup):
@@ -312,7 +307,7 @@ def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_co
             if feature_type == "tensor": 
                 #print("new tensor", new_tensor[:4, :3])
                 #print("new_tensor flatten", new_tensor.flatten()[:12])
-                list_feature.append(new_tensor.flatten())
+                list_feature.append(new_tensor.flatten().tolist())    #QUA HO AGGIUNTO tolist()
             elif feature_type == "scalar":
                 #print("new tensor", new_tensor)
                 list_feature.append(new_tensor)
@@ -333,46 +328,18 @@ def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_co
     return df_final
 
 
-
-
-    #df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
-
-    ## Transformations for i = 0 to 5 (6 windows)
-    #transformations = [lambda row: make_data_n_tuple(row, "tensor", i) for i in range(6)]
-
-    #list_all_variables = []
-    #feature_names = []
-    #for func in transformations:
-
-    #    for feature in list_features + [variable]:
-    #        feature_names.append(feature)
-    #        new_tensor = func(df.loc[feature])  
-    #        print("new tensor shape", new_tensor.shape)
-    #        print("portion of the tensor", new_tensor[:4, :3])
-
-    #        list_all_variables.append(new_tensor)
-
-    ## Concatenate along columns (axis=1)
-    #df_final = pd.DataFrame(list_all_variables, index=feature_names)
-
-    ## Save
-    #df_final.to_csv(f'{path}/{name_csv_file}_n_tuple.csv')
-    #print("df final shape", df_final.shape)
-
-    #return None
-
-
-    #df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
-    #transformations = [lambda x: make_data_n_tuple(x, "tensor", 0), lambda x: make_data_n_tuple(x, "tensor", 1), 
-    #                   lambda x: make_data_n_tuple(x, "tensor", 2), lambda x: make_data_n_tuple(x, "tensor", 3), 
-    #                   lambda x: make_data_n_tuple(x, "tensor", 4), lambda x: make_data_n_tuple(x, "tensor", 5)]     
-    #transformed_cols = []
-    #for func in transformations:
-    #    df_trans = df.copy()
-    #    for feature in list_features + [variable]:
-    #        df_trans.loc[feature] = func(df.loc[feature])
-    #    transformed_cols.append(df_trans)
-    #df_final = pd.concat(transformed_cols, axis=1)
-    #df_final.to_csv(f'{path}/{name_csv_file}_n_tuple.csv')
-    #print("df final shape", df_final.shape)
-    #return None
+def dataframe_merging(list_dataframe_files, path, flag):
+    list_dataframe = []
+    list_dataframe_shapes = []
+    for csv_dataframe in list_dataframe_files:
+        df = pd.read_csv(csv_dataframe, index_col=0)
+        list_dataframe.append(df)
+        list_dataframe_shapes.append(df.shape[1])
+    df_merged = pd.concat(list_dataframe, axis=1)
+    assert df_merged.shape[1] == sum(list_dataframe_shapes)
+    if flag == 1:
+        name_csv = "complete"
+    elif flag == 0:
+        name_csv = "toy"
+    df_merged.to_csv(os.path.join(path, f"{name_csv}_merged_n_tuple.csv"))
+    return None
