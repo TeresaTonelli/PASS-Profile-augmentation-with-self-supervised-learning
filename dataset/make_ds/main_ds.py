@@ -6,6 +6,7 @@ import torch
 import pandas as pd
 
 # Setting the computation device
+from make_ds_float import split_time_step_dataframe
 from utils import make_ds, make_ds_float_devices, make_ds_time_sort, make_ds_n_tuples, n_tuple_tensors_generation_check, make_ds_merging
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -68,3 +69,5 @@ n_tuple_tensors_generation_check(path_original, path_time_sorted, path_n_tuples)
 
 
 make_ds_merging(variable, float_devices, path_input_csv, name_input_csv, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+
+split_time_step_dataframe(os.path.abspath(os.path.join("..", variable, "toy_merged_n_tuple.csv")))

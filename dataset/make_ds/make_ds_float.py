@@ -343,3 +343,41 @@ def dataframe_merging(list_dataframe_files, path, flag):
         name_csv = "toy"
     df_merged.to_csv(os.path.join(path, f"{name_csv}_merged_n_tuple.csv"))
     return None
+
+
+def split_time_step_dataframe(full_dataframe_file):
+    df = pd.read_csv(full_dataframe_file, index_col=0)
+    time_steps_columns_indexes = {}
+    time_steps_dfs = {}
+    day_row = df.iloc[1]
+
+    for col_index, col_name in enumerate(df.columns):
+        day_tuple = day_row[col_name]  # This should be a tuple of 7 elements
+        day_tuple = day_tuple.replace("[", "").replace("]", "")
+        day_tuple = [float(x.strip()) for x in day_tuple.split(",")]
+
+        # Compute the time step (assuming constant spacing)
+        time_step = round(from_day_rad_to_day(day_tuple[1]) - from_day_rad_to_day(day_tuple[0]))
+
+        # Initialize storage if new time step encountered
+        if time_step not in time_steps_columns_indexes:
+            time_steps_columns_indexes[time_step] = []
+
+        # Store column index for this time step
+        time_steps_columns_indexes[time_step].append(col_index)
+
+    # Now create the grouped dataframes
+    for time_step, col_indexes in time_steps_columns_indexes.items():
+        col_names = df.columns[col_indexes]
+        time_steps_dfs[time_step] = df[col_names]
+
+    for k in time_steps_dfs.keys():
+        print("key", k)
+        df = time_steps_dfs[k]
+        df.to_csv(os.path.join(f"../CHLA/{k}_time_steps_n_tuple.csv"))
+
+    print("len time steps dfs", len(time_steps_dfs))
+    return time_steps_columns_indexes, time_steps_dfs
+
+
+
