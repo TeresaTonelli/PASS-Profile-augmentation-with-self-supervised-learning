@@ -133,5 +133,33 @@ class FloatDatasetFeat(Dataset):
 
         label = label_doxy_full * label_psal_full * label_temp_full  
 
+        #return self.column_name, year_list_n, day_rad_list_n, lat_list_n, lon_list_n, temp_list_n, psal_list_n, doxy_list_n, variable_list
+
+        #Addition for batch
+        year_tensor = torch.stack([year.repeat(200) for year in year_list_n])
+        day_tensor = torch.stack([day.repeat(200) for day in day_rad_list_n])
+        lat_tensor = torch.stack([lat.repeat(200) for lat in lat_list_n])
+        lon_tensor = torch.stack([lon.repeat(200) for lon in lon_list_n])
+        temp_tensor = torch.stack([temp for temp in temp_list_n])
+        psal_tensor = torch.stack([psal for psal in psal_list_n])
+        doxy_tensor = torch.stack([doxy for doxy in doxy_list_n])
+        var_tensor = torch.stack([var for var in variable_list])
+        assert year_tensor.shape == lat_tensor.shape == temp_tensor.shape == psal_tensor.shape == doxy_tensor.shape == var_tensor.shape == torch.Size([7, 200])
+        
+        # Stack all features as channels → [C=4, D=n_times, H=depth]
+        input_tensor = torch.stack([year_tensor, day_tensor, lat_tensor, lon_tensor, temp_tensor,psal_tensor, doxy_tensor,var_tensor])
+        print("input tensor shape", input_tensor.shape) 
+        assert input_tensor.shape == torch.Size([8, 7, 200]) # Shape: [4, n_times, depth]
+
+        # Expand to [C, D, H, W] for Conv3D (W=1 dummy width)
+        input_tensor = input_tensor.unsqueeze(-1)  # → [4, n_times, depth, 1]
+        print("input tensor shape", input_tensor.shape)
+        input_tensor = input_tensor.permute(3, 2, 0, 1)
+        print("input tensor shape", input_tensor.shape)
+        print(input_tensor[:, :2, 4, :])
+
+
+        return self.column_name, input_tensor
+
         #return self.column_name, year_full, day_rad_full, lat_full, lon_full, temp, psal, doxy, variable
-        return self.column_name, year_list_n, day_rad_list_n, lat_list_n, lon_list_n, temp_list_n, psal_list_n, doxy_list_n, variable_list
+        #return self.column_name, year_list_n, day_rad_list_n, lat_list_n, lon_list_n, temp_list_n, psal_list_n, doxy_list_n, variable_list
