@@ -63,6 +63,43 @@ def from_string_to_tensor_f(string, type):
 #    return stats
 
 
+def compute_and_save_normalization_stats_f(loader, save_path):
+    all_days, all_years, all_lats, all_lons = [], [], [], []
+    all_temps, all_psals, all_doxys = [], [], []
+    for n_float, data_full in loader:
+        years_ntuple = data_full[0]
+        day_rad_ntuple = data_full[1]
+        lat_full = data_full[2]
+        lon_full = data_full[3]
+        temp_full = data_full[4]
+        psal_full = data_full[5]
+        doxy_full = data_full[6]
+        var_full = data_full[-1]
+        all_days.append(day.flatten())
+        all_years.append(year.flatten())
+        all_lats.append(lat.flatten())
+        all_lons.append(lon.flatten())
+        all_temps.append(temp.flatten())
+        all_psals.append(psal.flatten())
+        all_doxys.append(doxy.flatten())
+    def stack_and_stats_f(tensors):
+        cat = torch.cat(tensors)
+        return float(cat.mean()), float(cat.std())
+    stats = {
+        "day": stack_and_stats_f(all_days),
+        "year": stack_and_stats_f(all_years),
+        "lat": stack_and_stats_f(all_lats),
+        "lon": stack_and_stats_f(all_lons),
+        "temp": stack_and_stats_f(all_temps),
+        "psal": stack_and_stats_f(all_psals),
+        "doxy": stack_and_stats_f(all_doxys)
+    }
+    with open(os.path.join(save_path, "normalization_stats.json"), "w") as f:
+        json.dump(stats, f, indent=4)
+    print(f"[INFO] Saved normalization stats to {os.path.join(save_path, 'normalization_stats.json')}", flush=True)
+    return stats
+
+
 class FloatDatasetFeat(Dataset):
 
     def __init__(self, path_df=None, stats_path="normalization_stats.json"):

@@ -7,7 +7,9 @@ import time
 import numpy as np
 
 from NN_architecture import DoubleConv, UNet3D
+from plots import plot_loss_f, plot_profiles_f
 from utils_dataset import FloatDatasetFeat, compute_and_save_normalization_stats_f
+from utils_plots import read_losses_median_f
 from utils_src import create_directories_f, save_ds_info_f
 
 print("end installation")
@@ -62,7 +64,7 @@ class TrainerFeat:
         training_x_sx = training_x[:, :, :, :, 0:l+1] 
         training_x_dx = training_x[:, :, :, :, l:n+1]
         assert (training_x_sx[:, :, :, :, 3] == training_x_dx[:, :, :, :, 0]).all()
-        print("training x sx shape", training_x_sx.shape)
+        #print("training x sx shape", training_x_sx.shape)
         #assert training_x_sx.shape == torch.Size([batch_size, 1, 200, 8, l+1]) 
         return training_x_sx, training_x_dx
 
@@ -103,7 +105,7 @@ class TrainerFeat:
         loss_1pd = (torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 0:1], I_02[:, :, :, -1:, 1:2]) + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 1:2])) / 2   
         loss_1p2d = torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 2:3])   
         loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
-        print("loss", loss)
+        #print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()
         losses.append(loss_over_GPUs.item())
@@ -144,8 +146,8 @@ class TrainerFeat:
 
 
 def load_train_objs_f(path_ds_train, save_dir, my_lr):
-    normalization_stats = compute_and_save_normalization_stats_f(DataLoader(FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json")), save_dir)
-    print("end normalization stats")
+    #normalization_stats = compute_and_save_normalization_stats_f(DataLoader(FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json")), save_dir)
+    #print("end normalization stats")
     train_set = FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json") 
     model = UNet3D()
     params = list(model.parameters())
@@ -170,22 +172,22 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
     train_data = prepare_dataloader_f(dataset, batch_size)
     trainer = TrainerFeat(model, train_data, optimizer, device, save_every, alpha_smooth_reg)
     trainer.train_f(total_epochs, save_dir, batch_size, save_every, my_lr)
-    #train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
-    #plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
+    train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
+    plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
 
-    #plot_profiles_f(prepare_dataloader_f(dataset, batch_size=1),
-    #            variable=my_variable,
-    #            dir=save_dir,
-    #            multiple_GPUs=False, 
-    #            ep=my_epochs, train=True, mov_average=False)
+    plot_profiles_f(prepare_dataloader_f(dataset, batch_size=1),
+                variable=my_variable,
+                dir=save_dir,
+                multiple_GPUs=False, 
+                ep=my_epochs, train=True, mov_average=True)
 
     val_dataset = FloatDatasetFeat(path_ds_test, save_dir + "/normalization_stats.json") 
     print("path ds test", path_ds_test)
-    #plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
-    #            variable=my_variable,
-    #            dir=save_dir,
-    #            multiple_GPUs=False, 
-    #            ep=my_epochs, train=False, mov_average=False)
+    plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
+                variable=my_variable,
+                dir=save_dir,
+                multiple_GPUs=False, 
+                ep=my_epochs, train=False, mov_average=True)
 
 
 if __name__ == "__main__":
