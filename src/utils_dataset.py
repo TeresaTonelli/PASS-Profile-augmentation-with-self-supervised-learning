@@ -13,7 +13,6 @@ def from_string_to_tensor_f(string, type):
         string = string.strip("[]").split(",")
     elif type == "tensor":
         string = string.replace("[", "").replace("]", "").split(",")
-        print("string", string)
     len_single_start_data = len(string)
     out = torch.zeros(len_single_start_data)   #prima era 200, ora e` 7`  
     for ind in range(len(string)):
@@ -35,33 +34,33 @@ def from_string_to_tensor_f(string, type):
     #return out, label
 
 
-def compute_and_save_normalization_stats_f(loader, save_path):
-    all_days, all_years, all_lats, all_lons = [], [], [], []
-    all_temps, all_psals, all_doxys = [], [], []
-    for n_float, year, day, lat, lon, temp, psal, doxy, _ in loader:
-        all_days.append(day.flatten())
-        all_years.append(year.flatten())
-        all_lats.append(lat.flatten())
-        all_lons.append(lon.flatten())
-        all_temps.append(temp.flatten())
-        all_psals.append(psal.flatten())
-        all_doxys.append(doxy.flatten())
-    def stack_and_stats_f(tensors):
-        cat = torch.cat(tensors)
-        return float(cat.mean()), float(cat.std())
-    stats = {
-        "day": stack_and_stats_f(all_days),
-        "year": stack_and_stats_f(all_years),
-        "lat": stack_and_stats_f(all_lats),
-        "lon": stack_and_stats_f(all_lons),
-        "temp": stack_and_stats_f(all_temps),
-        "psal": stack_and_stats_f(all_psals),
-        "doxy": stack_and_stats_f(all_doxys)
-    }
-    with open(os.path.join(save_path, "normalization_stats.json"), "w") as f:
-        json.dump(stats, f, indent=4)
-    print(f"[INFO] Saved normalization stats to {os.path.join(save_path, 'normalization_stats.json')}", flush=True)
-    return stats
+#def compute_and_save_normalization_stats_f(loader, save_path):
+#    all_days, all_years, all_lats, all_lons = [], [], [], []
+#    all_temps, all_psals, all_doxys = [], [], []
+#    for n_float, year, day, lat, lon, temp, psal, doxy, _ in loader:
+#        all_days.append(day.flatten())
+#        all_years.append(year.flatten())
+#        all_lats.append(lat.flatten())
+#        all_lons.append(lon.flatten())
+#        all_temps.append(temp.flatten())
+#        all_psals.append(psal.flatten())
+#        all_doxys.append(doxy.flatten())
+#    def stack_and_stats_f(tensors):
+#        cat = torch.cat(tensors)
+#        return float(cat.mean()), float(cat.std())
+#    stats = {
+#        "day": stack_and_stats_f(all_days),
+#        "year": stack_and_stats_f(all_years),
+#        "lat": stack_and_stats_f(all_lats),
+#        "lon": stack_and_stats_f(all_lons),
+#        "temp": stack_and_stats_f(all_temps),
+#        "psal": stack_and_stats_f(all_psals),
+#        "doxy": stack_and_stats_f(all_doxys)
+#    }
+#    with open(os.path.join(save_path, "normalization_stats.json"), "w") as f:
+#        json.dump(stats, f, indent=4)
+#    print(f"[INFO] Saved normalization stats to {os.path.join(save_path, 'normalization_stats.json')}", flush=True)
+#    return stats
 
 
 class FloatDatasetFeat(Dataset):
@@ -148,15 +147,12 @@ class FloatDatasetFeat(Dataset):
         
         # Stack all features as channels → [C=4, D=n_times, H=depth]
         input_tensor = torch.stack([year_tensor, day_tensor, lat_tensor, lon_tensor, temp_tensor,psal_tensor, doxy_tensor,var_tensor])
-        print("input tensor shape", input_tensor.shape) 
         assert input_tensor.shape == torch.Size([8, 7, 200]) # Shape: [4, n_times, depth]
 
         # Expand to [C, D, H, W] for Conv3D (W=1 dummy width)
         input_tensor = input_tensor.unsqueeze(-1)  # → [4, n_times, depth, 1]
-        print("input tensor shape", input_tensor.shape)
         input_tensor = input_tensor.permute(3, 2, 0, 1)
-        print("input tensor shape", input_tensor.shape)
-        print(input_tensor[:, :2, 4, :])
+
 
 
         return self.column_name, input_tensor

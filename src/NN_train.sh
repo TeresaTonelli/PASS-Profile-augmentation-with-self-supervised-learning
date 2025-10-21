@@ -24,7 +24,7 @@ conda activate glob_io_env
 python NN_train.py \
     --total_epochs 20 \
     --save_every 5 \
-    --batch_size 1 \
+    --batch_size 4 \
     --lr 0.001 \
     --variable CHLA \
     --flag_toy True \
