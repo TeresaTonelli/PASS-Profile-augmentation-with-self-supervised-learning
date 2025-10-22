@@ -67,8 +67,7 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
 
     #for year, day_rad, lat, lon, temp, psal, doxy, output_variable in ds:
     for sample in list(islice(ds, 500)):
-        var = sample[1][:, :, :, -1:, 3:4]  #FORSE QUA HO FATTO UN ERRORE, PERCHE` MI SERVONO TUTTI I TIME STEPS`
-        print("type var and size", type(var), var.shape)
+        var = sample[1][:, :, :, -1:, :]  
         testing_x_tmp = from_loader_data_to_train_data_f(sample)
         testing_x_sx, testing_x_dx = testing_x_tmp  
         out_d = model(testing_x_sx[:, :, :, :, [0,3]])  
@@ -98,8 +97,8 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
         #test_ma_profile = test_profile_1
         #var_ma = var
         if mov_average == True:
-            test_profile_d= torch_moving_average_f(test_profile_d.view(1, 1, -1), 3)
-            test_profile_2d= torch_moving_average_f(test_profile_2d.view(1, 1, -1), 3)
+            test_profile_d = torch_moving_average_f(test_profile_d.view(1, 1, -1), 3)
+            test_profile_2d = torch_moving_average_f(test_profile_2d.view(1, 1, -1), 3)
             test_profile_1= torch_moving_average_f(test_profile_1.view(1, 1, -1), 3)
             test_profile_1_d= torch_moving_average_f(test_profile_1_d.view(1, 1, -1), 3)
             test_profile_1_2d= torch_moving_average_f(test_profile_1_2d.view(1, 1, -1), 3)
@@ -108,26 +107,32 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
             #var_ma = torch_moving_average_f(var[:,:,:,-1:,3:4].squeeze().view(1, 1, -1), 3)
 
         fig, axs = plt.subplots(2, 3, figsize=(10, 8))
-        print("shape test_profile_d", test_profile_1.shape)
-        print("detph output shape", depth_output.shape)
         axs[0, 0].plot(test_profile_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
+        #axs[0, 0].plot(test_profile_d_ma.detach().numpy(), depth_output, color='green', label=f"generated {variable}")
         axs[0, 0].plot(var[:,:,:,:,1:2].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[0, 0].invert_yaxis()
         axs[0, 0].set_title('I1 comparison')
         axs[0, 1].plot(test_profile_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable} ")
+        #axs[0, 1].plot(test_profile_2d_ma.detach().numpy(), depth_output, color='green', label=f"generated {variable} ")
         axs[0, 1].plot(var[:,:,:,:,2:3].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[0, 1].invert_yaxis()
         axs[0, 1].set_title('I2 comparison')
         axs[0, 2].plot(test_profile_1.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[0, 2].plot(var[:,:,:,:,3:4].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[0, 2].invert_yaxis()
         axs[0, 2].set_title('I3 comparison')
         axs[1, 0].plot(test_profile_1_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[1, 0].plot(var[:,:,:,:,4:5].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[1, 0].invert_yaxis()
         axs[1, 0].set_title('I4 comparison')
         axs[1, 1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[1, 1].plot(var[:,:,:,:,5:6].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[1, 1].invert_yaxis()
         axs[1, 1].set_title('I5 comparison')
-        #axs[1, 2].plot(out_2d_ma.detach().numpy(), depth_output, color='green', label=f"generated {variable}")
-        #axs[1, 2].plot(out_1p2d_ma.detach().numpy(), depth_output, color='orange', label=f"generated {variable}")
+        axs[1, 2].plot(out_2d[:,:,:,-1:,1:2].squeeze().detach().numpy(), depth_output, color='green', label=f"generated {variable}")
+        axs[1, 2].plot(out_1p2d[:,:,:,-1:,0:1].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated {variable}")
         axs[1, 2].plot(var[:,:,:,:,3:4].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[1, 2].invert_yaxis()
         axs[1, 2].set_title('I3 sx dx comparison')
 
         #plt.plot(test_ma_profile[0, :].detach().numpy(), depth_output, color='green', label=f"generated {variable} with ma")  #prima era [0,0,:]
@@ -141,5 +146,5 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
         #plt.gca().invert_yaxis()
 
         plt.legend()
-        plt.savefig(dir_profile + f"/profile_{var[:,:, 0:1, :, 0:].item()}.png")
+        plt.savefig(dir_profile + f"/profile_{var[:,:, 0:1, :, 0:1].item()}.png")
         plt.close()

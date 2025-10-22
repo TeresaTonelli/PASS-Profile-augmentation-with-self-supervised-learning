@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:01:00
+#SBATCH --time=00:10:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -22,9 +22,9 @@ eval "$(/leonardo/home/userexternal/ttonelli/miniconda3/bin/conda shell.bash hoo
 conda activate glob_io_env
 
 python NN_train.py \
-    --total_epochs 20 \
-    --save_every 5 \
-    --batch_size 4 \
+    --total_epochs 200 \
+    --save_every 50 \
+    --batch_size 1 \
     --lr 0.001 \
     --variable CHLA \
     --flag_toy True \

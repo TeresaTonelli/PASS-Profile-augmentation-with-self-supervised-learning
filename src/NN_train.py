@@ -104,8 +104,9 @@ class TrainerFeat:
         loss_2d = (torch.nn.functional.mse_loss(I_d[:, :, :, -1:, 1:2], I_01[:, :, :, -1:, 2:3]) + torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 0:1], I_01[:, :, :, -1:, 2:3])) / 2       
         loss_1pd = (torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 0:1], I_02[:, :, :, -1:, 1:2]) + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 1:2])) / 2   
         loss_1p2d = torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 2:3])   
-        loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
-        #print("loss", loss)
+        #loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
+        loss = 0.00 * loss_1 + 0.00 * loss_1sd + 0.00 * loss_2 + 1.00 * loss_d + 0.00 * loss_2d + 0.00 * loss_1pd + 0.00 * loss_1p2d 
+        print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()
         losses.append(loss_over_GPUs.item())
@@ -179,15 +180,15 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 variable=my_variable,
                 dir=save_dir,
                 multiple_GPUs=False, 
-                ep=my_epochs, train=True, mov_average=True)
+                ep=my_epochs, train=True, mov_average=False)
 
     val_dataset = FloatDatasetFeat(path_ds_test, save_dir + "/normalization_stats.json") 
     print("path ds test", path_ds_test)
-    plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
-                variable=my_variable,
-                dir=save_dir,
-                multiple_GPUs=False, 
-                ep=my_epochs, train=False, mov_average=True)
+    #plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            multiple_GPUs=False, 
+    #            ep=my_epochs, train=False, mov_average=True)
 
 
 if __name__ == "__main__":
