@@ -97,6 +97,7 @@ class TrainerFeat:
         #print("ID2 cat shpae", torch.cat((I_d[:, :, :, :, 0:1], I_1pd[:, :, :, :, 0:1]), -1).shape)
         I_d2 = self.model_Conv1D(torch.cat((I_d[:, :, :, :, 0:1], I_1pd[:, :, :, :, 0:1]), -1))    
         I_1pd2 = self.model_Conv1D(torch.cat((I_d[:, :, :, :, 1:2], I_1pd[:, :, :, :, 1:2]), -1))     
+        #loss_1 = torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 1:2], targets)  # + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 0:1], targets)) / 2      
         loss_1 = (torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 1:2], targets) + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 0:1], targets)) / 2      
         loss_1sd = torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 1:2], I_1pd2[:, :, :, -1:, 0:1])     
         loss_2 = (torch.nn.functional.mse_loss(I_d[:, :, :, -1:, 1:2], I_d2[:, :, :, -1:, 0:1]) + torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 0:1], I_1pd2[:, :, :, -1:, 1:2])) / 2      
@@ -104,8 +105,8 @@ class TrainerFeat:
         loss_2d = (torch.nn.functional.mse_loss(I_d[:, :, :, -1:, 1:2], I_01[:, :, :, -1:, 2:3]) + torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 0:1], I_01[:, :, :, -1:, 2:3])) / 2       
         loss_1pd = (torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 0:1], I_02[:, :, :, -1:, 1:2]) + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 1:2])) / 2   
         loss_1p2d = torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 2:3])   
-        #loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
-        loss = 0.00 * loss_1 + 0.00 * loss_1sd + 0.00 * loss_2 + 1.00 * loss_d + 0.00 * loss_2d + 0.00 * loss_1pd + 0.00 * loss_1p2d 
+        loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
+        #loss = 0.00 * loss_1 + 0.00 * loss_1sd + 0.00 * loss_2 + 1.00 * loss_d + 0.00 * loss_2d + 0.00 * loss_1pd + 0.00 * loss_1p2d 
         print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()

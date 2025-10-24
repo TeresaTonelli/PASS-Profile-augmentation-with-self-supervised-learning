@@ -29,20 +29,6 @@ def crop_to_match(enc, dec):
     return enc
 
 
-
-
-    #_, _, d_enc, h_enc, w_enc = enc.shape
-    #_, _, d_dec, h_dec, w_dec = dec.shape
-
-    #d_crop = (d_enc - d_dec) // 2
-    #h_crop = (h_enc - h_dec) // 2
-    #w_crop = (w_enc - w_dec) // 2
-
-    #return enc[:, :, d_crop:d_crop + d_dec,
-    #            h_crop:h_crop + h_dec,
-    #            w_crop:w_crop + w_dec]
-
-
 class DoubleConv(nn.Module):
     """(Conv3D → BN → ReLU) × 2"""
     def __init__(self, in_channels, out_channels):
