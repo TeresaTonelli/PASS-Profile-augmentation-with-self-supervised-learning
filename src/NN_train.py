@@ -149,7 +149,7 @@ class TrainerFeat:
 
 def load_train_objs_f(path_ds_train, save_dir, my_lr):
     #normalization_stats = compute_and_save_normalization_stats_f(DataLoader(FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json")), save_dir)
-    #print("end normalization stats")
+    #print("end normalization stats", flush=True)
     train_set = FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json") 
     model = UNet3D()
     params = list(model.parameters())

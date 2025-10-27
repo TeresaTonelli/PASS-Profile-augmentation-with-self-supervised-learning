@@ -34,12 +34,16 @@ class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.double_conv = nn.Sequential(
-            nn.Conv3d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv3d(in_channels, out_channels, kernel_size=(5, 3, 3), padding=(2, 1, 1)),   #Ho cambiato qua e nel conv3d linea 41 sia kernel size che padding --> prima erano 3 e 1
             #nn.BatchNorm3d(out_channels),
             nn.InstanceNorm3d(out_channels, affine=True),
             nn.ReLU(inplace=True),
-            nn.Conv3d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv3d(out_channels, out_channels, kernel_size=(5, 3, 3), padding=(2, 1, 1)),
             #nn.BatchNorm3d(out_channels),
+            nn.InstanceNorm3d(out_channels, affine=True),
+            nn.ReLU(inplace=True), 
+            #addition of 3 Conv block
+            nn.Conv3d(out_channels, out_channels, kernel_size=(5, 3, 3), padding=(2, 1, 1)),
             nn.InstanceNorm3d(out_channels, affine=True),
             nn.ReLU(inplace=True)
         )
@@ -57,7 +61,13 @@ class UNet3D(nn.Module):
         self.encoder2 = DoubleConv(features[0], features[1])
         self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 1), stride=(2, 2, 1))   #2 
 
-        self.bottleneck = DoubleConv(features[1], features[2])
+        #self.encoder3 = DoubleConv(features[1], features[2])
+        #self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 1), stride=(2, 2, 1))
+
+        self.bottleneck = DoubleConv(features[1], features[2])    #Anche qua ho dovuto modificare
+
+        #self.upconv3 = nn.ConvTranspose3d(features[3], features[2], kernel_size=(2, 2, 1), stride=(2, 2, 1))
+        #self.decoder3 = DoubleConv(features[3], features[2])
 
         self.upconv2 = nn.ConvTranspose3d(features[2], features[1], kernel_size=(2, 2, 1), stride=(2, 2, 1))
         self.decoder2 = DoubleConv(features[2], features[1])
@@ -73,13 +83,32 @@ class UNet3D(nn.Module):
         #print("enc1:", enc1.shape)
         enc2 = self.encoder2(self.pool1(enc1))
         #print("enc2:", enc2.shape)
-        bottleneck = self.bottleneck(self.pool2(enc2))
+
+        #enc3 = self.encoder3(self.pool2(enc2))    #questo pezzo e` nuovo
+        #print("enc3:", enc3.shape)
+
+        bottleneck = self.bottleneck(self.pool2(enc2))    #Il bottleneck e` vecchio ma e` modificato --> ora c'e` 3, prima 2
+        #print("bottleneck:", bottleneck.shape)
+        #bottleneck = self.bottleneck(self.pool3(enc3))  
         #print("bottleneck:", bottleneck.shape)
 
+        #nuovo blocco 
+        #dec3 = self.upconv3(bottleneck)
+        #print("dec3 after upconv3:", dec3.shape)
+        #enc3_cropped = crop_to_match(enc3, dec3)
+        #print("enc3 cropped shape", enc3_cropped.shape)
+        #dec3 = torch.cat((dec3, enc3_cropped), dim=1)
+        #print("dec3 cropping shape", dec3.shape)
+        #dec3 = self.decoder3(dec3)
+        #print("dec3 after decoder3:", dec3.shape)
+
+        #dec2 = self.upconv2(dec3)    #linea per encoder-decoder 3
         dec2 = self.upconv2(bottleneck)
         #print("dec2 after upconv2:", dec2.shape)
         enc2_cropped = crop_to_match(enc2, dec2)
+        #print("enc2 cropped shape", enc2_cropped.shape)
         dec2 = torch.cat((dec2, enc2_cropped), dim=1)
+        #print("dec 2 cropping shape", dec2.shape)
         dec2 = self.decoder2(dec2)
         #print("dec2 after decoder2:", dec2.shape)
 
@@ -90,7 +119,7 @@ class UNet3D(nn.Module):
         dec1 = self.decoder1(dec1)
         #print("dec1 after decoder1:", dec1.shape)
 
-        #out = self.final_conv(dec1)
+        out = self.final_conv(dec1)
         #print("Output shape:", out.shape)
 
         return self.final_conv(dec1)

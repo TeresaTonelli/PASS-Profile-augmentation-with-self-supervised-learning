@@ -64,26 +64,41 @@ def from_string_to_tensor_f(string, type):
 
 
 def compute_and_save_normalization_stats_f(loader, save_path):
-    all_days, all_years, all_lats, all_lons = [], [], [], []
-    all_temps, all_psals, all_doxys = [], [], []
+    all_days, all_years, all_lats, all_lons = [], [], [], []  #torch.zeros([200, 7]), torch.zeros([200, 7]), torch.zeros([200, 7]), torch.zeros([200, 7])
+    all_temps, all_psals, all_doxys = [], [], []    #torch.zeros([200, 7]), torch.zeros([200, 7]), torch.zeros([200, 7])
     for n_float, data_full in loader:
-        years_ntuple = data_full[0]
-        day_rad_ntuple = data_full[1]
-        lat_full = data_full[2]
-        lon_full = data_full[3]
-        temp_full = data_full[4]
-        psal_full = data_full[5]
-        doxy_full = data_full[6]
-        var_full = data_full[-1]
-        all_days.append(day.flatten())
-        all_years.append(year.flatten())
-        all_lats.append(lat.flatten())
-        all_lons.append(lon.flatten())
-        all_temps.append(temp.flatten())
-        all_psals.append(psal.flatten())
-        all_doxys.append(doxy.flatten())
+        years_ntuple = data_full[:, :, :, 0, :]
+        day_rad_ntuple = data_full[:, :, :, 1, :]
+        #print("day rad ntuple", day_rad_ntuple)
+        #print("day n tuples", day_rad_ntuple.shape)
+        lat_ntuple = data_full[:, :, :, 2, :]
+        lon_ntuple = data_full[:, :, :, 3, :]
+        temp_ntuple = data_full[:, :, :, 4, :]
+        #print("temp full n tuples", temp_full.shape)
+        #print("temp full tensor 1D", temp_full[:, :10, :, 0:].squeeze())
+        psal_ntuple = data_full[:, :, :, 5, :]
+        doxy_ntuple = data_full[:, :, :, 6, :]
+        var_ntuple = data_full[:, :, :, -1, :]
+        print("day squeeze", day_rad_ntuple.squeeze().shape)
+        #all_days = torch.cat((all_days, day_rad_ntuple.squeeze()), axis=1)
+        #all_years = torch.cat((all_years, years_ntuple.squeeze()), axis=1)
+        #all_lats = torch.cat((all_lats, lat_ntuple.squeeze()), axis=1)
+        #all_lons = torch.cat((all_lons, lon_ntuple.squeeze()), axis=1)
+        #all_temps = torch.cat((all_temps, temp_ntuple.squeeze()), axis=1)
+        #all_psals = torch.cat((all_psals, psal_ntuple.squeeze()), axis=1)
+        #all_doxys = torch.cat((all_doxys, doxy_ntuple.squeeze()), axis=1)
+        all_days.append(day_rad_ntuple)
+        all_years.append(years_ntuple)
+        all_lats.append(lat_ntuple)
+        all_lons.append(lon_ntuple)
+        all_temps.append(temp_ntuple)
+        all_psals.append(psal_ntuple)
+        all_doxys.append(doxy_ntuple)
+    #print("all day shape", all_days.shape)
+    #all_days = all_days[:, :7]
     def stack_and_stats_f(tensors):
         cat = torch.cat(tensors)
+        print("cat shape", cat.shape)
         return float(cat.mean()), float(cat.std())
     stats = {
         "day": stack_and_stats_f(all_days),
