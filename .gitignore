@@ -5,6 +5,7 @@
 make_ds.2*
 make_ds_outputs/
 CHLA/
+CHLA_trial*
 NITRATE/
 
 #sh files src

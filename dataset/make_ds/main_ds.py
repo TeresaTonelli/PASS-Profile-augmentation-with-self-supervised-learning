@@ -50,12 +50,12 @@ name_input_time_sort = "toy_ds_df_time_sorted"
 csv_data_directory = os.path.abspath(os.path.join("..", variable, name_input_csv + ".csv"))
 make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
-float_devices = ['SR6903823', 'SD6901765', 'SD6903823']
+float_devices = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))]
+print("float devices", float_devices)
 for device in float_devices:
     make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, device ,name_input_time_sort + ".csv")), 
                   flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
-float_devices = ['SR6903823', 'SD6901765', 'SD6903823']
 list_features = ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy']
 for device in float_devices:
     path_input_time_sorted = os.path.abspath(os.path.join("..", variable, device))

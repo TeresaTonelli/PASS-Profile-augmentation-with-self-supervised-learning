@@ -186,7 +186,7 @@ def make_toy_dataset(path_float, variable):
     name_list = pd.read_csv(path_float + '/Float_Index.txt', header=None).to_numpy()[:, 0].tolist()
     datetime_list = pd.read_csv(path_float + '/Float_Index.txt', header=None).to_numpy()[:, 3].tolist()
     dict_ds = dict()
-    for i in range(int(np.size(name_list) / 50)):
+    for i in range(int(np.size(name_list) / 5)):
         path = path_float + "/" + name_list[i]
         if not os.path.exists(path):
             continue
@@ -244,10 +244,9 @@ def make_sorted_year_day_df(dataframe_variable_dir, variable):
         if subfolder == 'Unnamed: 0':
             continue
         subfolder_path = os.path.join(dataframe_variable_dir, subfolder)
-        print("subfolder path", subfolder_path)
+        #print("subfolder path", subfolder_path)
         if os.path.isdir(subfolder_path):
             for filename in os.listdir(subfolder_path):
-                print("filename", filename)
                 df = pd.read_csv(os.path.join(subfolder_path, filename), index_col=0)    #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
                 df = df.T
                 df_sorted = df.sort_values(by=['year', 'day_rad'])
@@ -282,14 +281,14 @@ def make_data_n_tuple(dataframe_row, type, i):
 
 def is_arithmetic_sequence(tup):
     diffs = [tup[i+1] - tup[i] for i in range(len(tup) - 1)]
-    print("diffs", diffs)
+    #print("diffs", diffs)
     print("diffs days int", [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
     return all(np.isclose(d, diffs[0]) for d in diffs)
 
 
 def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
     df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
-    print("df columns", df.columns)
+    #print("df columns", df.columns)
 
     list_all_variables = []
     feature_names = []
@@ -332,6 +331,9 @@ def dataframe_merging(list_dataframe_files, path, flag):
     list_dataframe = []
     list_dataframe_shapes = []
     for csv_dataframe in list_dataframe_files:
+        if not os.path.exists(csv_dataframe):
+            continue
+        print("csv dataframe", csv_dataframe)
         df = pd.read_csv(csv_dataframe, index_col=0)
         list_dataframe.append(df)
         list_dataframe_shapes.append(df.shape[1])
@@ -341,6 +343,7 @@ def dataframe_merging(list_dataframe_files, path, flag):
         name_csv = "complete"
     elif flag == 0:
         name_csv = "toy"
+    print("df merged shape", df_merged.shape)
     df_merged.to_csv(os.path.join(path, f"{name_csv}_merged_n_tuple.csv"))
     return None
 

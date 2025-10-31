@@ -93,12 +93,14 @@ def make_ds_float_devices(variable, csv_data_directory, flag_complete=1, flag_to
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/float_ds_df_train.csv"):
+    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    print("single float dir", single_float_dir)
+    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_df_train.csv"):
         print("hello making complete ds...")
         make_per_float_df(csv_data_directory, variable)
         print("superfloat complete ds float devices created")
 
-    if flag_toy and not os.path.exists(f"../{variable}/SD6903823/toy_ds_df.csv"):
+    if flag_toy and not os.path.exists(f"../{variable}/{single_float_dir}/toy_ds_df.csv"):
         print("hello making toy ds device float...")
         make_per_float_toy_df(csv_data_directory, variable)
         print("superfloat toy ds float devices created")
@@ -111,14 +113,16 @@ def make_ds_time_sort(variable, var_data_directory, sorted_float_csv, flag_compl
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/float_ds_df_train_time_sorted.csv"):
+    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    print("single float dir time sort", single_float_dir)
+    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_df_train_time_sorted.csv"):
         print("hello making complete time order ds...")
         make_sorted_year_day_df(var_data_directory, variable)
         print(list_year_day_df(sorted_float_csv)[0])
         print(list_year_day_df(sorted_float_csv)[1])
         print("superfloat complete ds time order created")
 
-    if flag_toy and not os.path.exists(f"../{variable}/SD6903823/toy_ds_df_time_sorted.csv"):
+    if flag_toy and not os.path.exists(f"../{variable}/{single_float_dir}/toy_ds_df_time_sorted.csv"):
         print("hello making toy ds time order float...")
         make_sorted_year_day_df(var_data_directory, variable)
         print(list_year_day_df(sorted_float_csv)[0])
@@ -132,12 +136,14 @@ def make_ds_n_tuples(variable, list_features, path_input_csv, name_input_csv, fl
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/SD6903823/{name_input_csv}_n_tuple.csv"):
+    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    print("single float dir time sort", single_float_dir)
+    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/{name_input_csv}_n_tuple.csv"):
         print("hello making complete n_tuples ds...")
         make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
         print("superfloat complete ds n_tuples created")
 
-    if flag_toy and not os.path.exists(f'../{variable}/SD6903823/{name_input_csv}_n_tuple.csv'):
+    if flag_toy and not os.path.exists(f'../{variable}/{single_float_dir}/{name_input_csv}_n_tuple.csv'):
         print("hello making toy ds n_tuples...")
         make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
         print("superfloat toy ds n_tuples created")
@@ -150,6 +156,8 @@ def make_ds_merging(variable, list_devices, path_input_csv, name_input_csv, flag
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
+    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    print("single float dir time sort", single_float_dir)
     if flag_complete and not os.path.exists(f"../{variable}/{name_input_csv}_merged_n_tuple.csv"):
         print("hello making complete n_tuples merging ds...")
         list_dataframe_files = []
