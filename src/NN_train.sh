@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:25:00
+#SBATCH --time=00:20:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -26,5 +26,5 @@ python NN_train.py \
     --save_every 50 \
     --batch_size 1 \
     --lr 0.001 \
-    --variable CHLA \
+    --variable NITRATE \
     --flag_toy True \

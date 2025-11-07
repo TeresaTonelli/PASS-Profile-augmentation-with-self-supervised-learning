@@ -43,9 +43,9 @@ class DoubleConv(nn.Module):
             nn.InstanceNorm3d(out_channels, affine=True),
             nn.ReLU(inplace=True), 
             #addition of 3 Conv block
-            nn.Conv3d(out_channels, out_channels, kernel_size=(5, 3, 3), padding=(2, 1, 1)),
-            nn.InstanceNorm3d(out_channels, affine=True),
-            nn.ReLU(inplace=True)
+            #nn.Conv3d(out_channels, out_channels, kernel_size=(3, 3, 1), padding=(1, 1, 0)),
+            #nn.InstanceNorm3d(out_channels, affine=True),
+            #nn.ReLU(inplace=True)
         )
 
     def forward(self, x):
@@ -65,6 +65,7 @@ class UNet3D(nn.Module):
         #self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 1), stride=(2, 2, 1))
 
         self.bottleneck = DoubleConv(features[1], features[2])    #Anche qua ho dovuto modificare
+        self.dropout = nn.Dropout3d(p=0.1)
 
         #self.upconv3 = nn.ConvTranspose3d(features[3], features[2], kernel_size=(2, 2, 1), stride=(2, 2, 1))
         #self.decoder3 = DoubleConv(features[3], features[2])
@@ -88,6 +89,7 @@ class UNet3D(nn.Module):
         #print("enc3:", enc3.shape)
 
         bottleneck = self.bottleneck(self.pool2(enc2))    #Il bottleneck e` vecchio ma e` modificato --> ora c'e` 3, prima 2
+        bottleneck = self.dropout(bottleneck)
         #print("bottleneck:", bottleneck.shape)
         #bottleneck = self.bottleneck(self.pool3(enc3))  
         #print("bottleneck:", bottleneck.shape)

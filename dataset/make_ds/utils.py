@@ -45,26 +45,15 @@ def n_tuple_tensors_generation_check(original_dataset_file, time_sorted_dataset_
     df_n_tuples = pd.read_csv(n_tuples_dataset_file, header=0)
     variables = df_time_sorted.index.tolist()
     float_n_tuples_latitude = [float(x.strip()) for x in df_n_tuples.iloc[2, 1].strip("[]").split(",")]
-    #print("float_n_tuples latitudes", float_n_tuples_latitude)
-    #print("n tuples CHLA", df_n_tuples.iloc[7, 1])
-    chla_list = [float(x.strip()) for x in df_n_tuples.iloc[7, 1].strip("[]").split(",")]
-    chla_tensor = torch.tensor(chla_list)
-    #print("chla tensor", chla_tensor)
-    #print("type CHLA", type(chla_tensor))
-    #print("shape CHLA", chla_tensor.shape)
+    var_list = [float(x.strip()) for x in df_n_tuples.iloc[7, 1].strip("[]").split(",")]
+    var_tensor = torch.tensor(var_list)
     for i in range(1, 8):
         #print("time sorted latitude", df_time_sorted.iloc[variables[2], i])
         print("latitude euqality", float_n_tuples_latitude[i-1] == float(df_time_sorted.iloc[variables[2], i]))
         clean = df_time_sorted.iloc[variables[7], i].replace("tensor([", "").replace("])", "")
         values = [float(x.strip()) for x in clean.split(",")]
         tensor = torch.tensor(values)
-        #print("tensor CHLA", tensor)
-        #print("tensor CHLA type", type(tensor))
-        #print("shape CHLA tensor", tensor.shape)
-        #print("type single element tensor", type(chla_tensor[1]))
-        #print("tensor CHLA 1", [chla_tensor[j].item() for j in range(1400) if j%7 == i-1])
-        #print("tensor CHLA 2", tensor.tolist())
-        print("CHLA check equality", [chla_tensor[j].item() for j in range(1400) if j%7 == i-1] == tensor.tolist())
+        print("VAR check equality", [var_tensor[j].item() for j in range(1400) if j%7 == i-1] == tensor.tolist())
 
 
 
@@ -93,14 +82,18 @@ def make_ds_float_devices(variable, csv_data_directory, flag_complete=1, flag_to
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    #single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    #print("single float dir", single_float_dir)
+    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))]
     print("single float dir", single_float_dir)
-    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_df_train.csv"):
+    #if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_df_train.csv"):
+    if flag_complete and single_float_dir == []:
         print("hello making complete ds...")
         make_per_float_df(csv_data_directory, variable)
         print("superfloat complete ds float devices created")
 
-    if flag_toy and not os.path.exists(f"../{variable}/{single_float_dir}/toy_ds_df.csv"):
+    #if flag_toy and not os.path.exists(f"../{variable}/{single_float_dir}/toy_ds_df.csv"):
+    if flag_toy and single_float_dir == []:
         print("hello making toy ds device float...")
         make_per_float_toy_df(csv_data_directory, variable)
         print("superfloat toy ds float devices created")
@@ -136,7 +129,7 @@ def make_ds_n_tuples(variable, list_features, path_input_csv, name_input_csv, fl
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
+    single_float_dir = os.path.basename(path_input_csv) #[f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
     print("single float dir time sort", single_float_dir)
     if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/{name_input_csv}_n_tuple.csv"):
         print("hello making complete n_tuples ds...")

@@ -6,7 +6,10 @@ make_ds.2*
 make_ds_outputs/
 CHLA/
 CHLA_trial*
+CHLA_true*
 NITRATE/
+NITRATE_small*
+NITRATE_big*
 
 #sh files src
 make_src_outputs/

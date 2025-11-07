@@ -222,7 +222,8 @@ def make_per_float_toy_df(full_floats_ds, variable):
     for float_device in list_devices_float:
         print("float device number", float_device)
         filtered_df = df.loc[:, df.columns.str.startswith(float_device)]
-        filtered_df.insert(0, 'Unnamed: 0', ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', 'CHLA'])
+        #filtered_df.insert(0, 'Unnamed: 0', ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', 'CHLA'])
+        filtered_df.insert(0, 'Unnamed: 0', ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
         os.makedirs(f'../{variable}/{float_device}', exist_ok=True)
         filtered_df.to_csv(f'../{variable}/{float_device}/toy_ds_df.csv', index=False)
     return None
@@ -279,11 +280,17 @@ def make_data_n_tuple(dataframe_row, type, i):
     return output_n_tuples[i]  # return the i-th 7-column slice
 
 
-def is_arithmetic_sequence(tup):
+def is_arithmetic_sequence(tup):   #RICORDA CHE QUA STO FACENDO AMCORA UN PO' DI ESPERIMENTI
+    #print("days int", [int(from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
     diffs = [tup[i+1] - tup[i] for i in range(len(tup) - 1)]
-    #print("diffs", diffs)
-    print("diffs days int", [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
-    return all(np.isclose(d, diffs[0]) for d in diffs)
+    #print(all(np.isclose(d, diffs[0]) for d in diffs))
+    #print("diffs days int", [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
+    #diffs = [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)]
+    print("days int", [int(from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
+    print("diffs", diffs)
+    print("condition diffs", [np.isclose(d, diffs[0], rtol=2 * 1e-1, atol=1e-2) for d in diffs])
+    print("condition diffs", all(np.isclose(d, diffs[0], rtol=2 * 1e-1, atol=1e-2) for d in diffs))
+    return all(np.isclose(d, diffs[0], rtol=2 * 1e-1, atol=1e-2) for d in diffs)
 
 
 def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
@@ -348,7 +355,7 @@ def dataframe_merging(list_dataframe_files, path, flag):
     return None
 
 
-def split_time_step_dataframe(full_dataframe_file):
+def split_time_step_dataframe(full_dataframe_file, variable):
     df = pd.read_csv(full_dataframe_file, index_col=0)
     time_steps_columns_indexes = {}
     time_steps_dfs = {}
@@ -377,7 +384,7 @@ def split_time_step_dataframe(full_dataframe_file):
     for k in time_steps_dfs.keys():
         print("key", k)
         df = time_steps_dfs[k]
-        df.to_csv(os.path.join(f"../CHLA/{k}_time_steps_n_tuple.csv"))
+        df.to_csv(os.path.join(f"../{variable}/{k}_time_steps_n_tuple.csv"))
 
     print("len time steps dfs", len(time_steps_dfs))
     return time_steps_columns_indexes, time_steps_dfs

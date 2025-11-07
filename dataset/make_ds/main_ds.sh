@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:00:30
+#SBATCH --time=00:00:20
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -23,4 +23,4 @@ python main_ds.py \
     --training_folder SSint_FLOAT \
     --input_float_directory /leonardo_scratch/large/userexternal/ttonelli/OGS/SSint_FLOAT/SUPERFLOAT \
     --flag_toy True \
-    --variable CHLA \
+    --variable NITRATE \
