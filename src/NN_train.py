@@ -105,8 +105,13 @@ class TrainerFeat:
         loss_2d = (torch.nn.functional.mse_loss(I_d[:, :, :, -1:, 1:2], I_01[:, :, :, -1:, 2:3]) + torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 0:1], I_01[:, :, :, -1:, 2:3])) / 2       
         loss_1pd = (torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 0:1], I_02[:, :, :, -1:, 1:2]) + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 1:2])) / 2   
         loss_1p2d = torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 1:2], I_02[:, :, :, -1:, 2:3])   
-        loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
+        loss_bound = torch.nn.functional.mse_loss(self.model_Conv1D(torch.cat((I_01[:, :, :, :, 0:1], I_01[:, :, :, :, 0:1]), -1)), I_01[:, :, :, -1:, 0:1]) + torch.nn.functional.mse_loss(self.model_Conv1D(torch.cat((I_02[:, :, :, :, 0:1], I_02[:, :, :, :, 0:1]), -1)), I_02[:, :, :, -1:, 0:1])
+        loss_reg = torch.nn.functional.mse_loss(I_d[:, :, :, -1:, 0:1], 1/3 * (I_01[:, :, :, -1:, 0:1] + I_01[:, :, :, -1:, 3:])) + torch.nn.functional.mse_loss(I_1pd[:, :, :, -1:, 0:1], 1/3 * (I_02[:, :, :, -1:, 0:1] + I_02[:, :, :, -1:, 3:]))
+        loss_reg_2 = torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 0:1], 2/3 * (I_01[:, :, :, -1:, 0:1] + I_01[:, :, :, -1:, 3:])) + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 0:1], 2/3 * (I_02[:, :, :, -1:, 0:1] + I_02[:, :, :, -1:, 3:]))
+        #loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
         #loss = 0.2 * loss_1 + 0.00 * loss_1sd + 0.00 * loss_2 + 0.20 * loss_d + 0.20 * loss_2d + 0.20 * loss_1pd + 0.20 * loss_1p2d 
+        #loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.0125 * loss_d + 0.0125 * loss_2d + 0.0125 * loss_1pd + 0.0125 * loss_1p2d 
+        loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.1 * loss_bound     #+ 0.025 * loss_reg + 0.025 * loss_reg_2
         print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()
