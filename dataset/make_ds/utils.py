@@ -56,6 +56,25 @@ def n_tuple_tensors_generation_check(original_dataset_file, time_sorted_dataset_
         print("VAR check equality", [var_tensor[j].item() for j in range(1400) if j%7 == i-1] == tensor.tolist())
 
 
+def split_train_test_toy(csv_dataset, variable):
+    df_original = pd.read_csv(csv_dataset, header=0)
+    df = df_original.copy()
+    print("df shape", df.shape)
+    n = len(df.columns)
+    print("frist column", df.iloc[:, 0])
+    print("n", n)
+    k = int(n / 10)
+    print("k", k)
+    test_indexes = random.sample(range(1, n), k)  #[random.randint(1, n-1) for _ in range(k)]
+    train_indexes = [j for j in range(n) if j not in test_indexes]
+    print("train indexes", train_indexes)
+    print("test indexes", test_indexes)
+    part_train = df.iloc[:, train_indexes]  # First 2 columns
+    part_test = df.iloc[:, test_indexes]  # Last 2 columns
+    part_test.insert(0, "Unnamed_0", df.iloc[:, 0])
+    part_train.to_csv(os.path.abspath(os.path.join("..", variable, "toy_ds_sf_merged_train.csv")), index=False)
+    part_test.to_csv(os.path.abspath(os.path.join("..", variable, "toy_ds_sf_merged_test.csv")), index=False)
+    return None
 
 
 def make_ds(variable, input_float_directory, flag_complete=1, flag_toy=0):

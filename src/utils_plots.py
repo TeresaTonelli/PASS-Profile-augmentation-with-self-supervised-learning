@@ -22,5 +22,4 @@ def from_loader_data_to_train_data_f(input_data):
     testing_x_sx = testing_x[:, :, :, :, 0:l+1] 
     testing_x_dx = testing_x[:, :, :, :, l:n+1]
     assert (testing_x_sx[:, :, :, :, 3] == testing_x_dx[:, :, :, :, 0]).all()
-    print("testing x sx shape", testing_x_sx.shape)
     return testing_x_sx, testing_x_dx

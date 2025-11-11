@@ -37,11 +37,11 @@ class DoubleConv(nn.Module):
             nn.Conv3d(in_channels, out_channels, kernel_size=(5, 3, 3), padding=(2, 1, 1)),   #Ho cambiato qua e nel conv3d linea 41 sia kernel size che padding --> prima erano 3 e 1
             #nn.BatchNorm3d(out_channels),
             nn.InstanceNorm3d(out_channels, affine=True),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=True), 
             nn.Conv3d(out_channels, out_channels, kernel_size=(5, 3, 3), padding=(2, 1, 1)),
             #nn.BatchNorm3d(out_channels),
             nn.InstanceNorm3d(out_channels, affine=True),
-            nn.ReLU(inplace=True), 
+            nn.ReLU(inplace=True),    
             #addition of 3 Conv block
             #nn.Conv3d(out_channels, out_channels, kernel_size=(3, 3, 1), padding=(1, 1, 0)),
             #nn.InstanceNorm3d(out_channels, affine=True),

@@ -7,7 +7,7 @@ import time
 import numpy as np
 
 from NN_architecture import DoubleConv, UNet3D
-from plots import plot_loss_f, plot_profiles_f
+from plots import plot_loss_f, plot_profiles_f, plot_NN_intermediate_profiles
 from utils_dataset import FloatDatasetFeat, compute_and_save_normalization_stats_f
 from utils_plots import read_losses_median_f
 from utils_src import create_directories_f, save_ds_info_f
@@ -153,8 +153,8 @@ class TrainerFeat:
 
 
 def load_train_objs_f(path_ds_train, save_dir, my_lr):
-    #normalization_stats = compute_and_save_normalization_stats_f(DataLoader(FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json")), save_dir)
-    #print("end normalization stats", flush=True)
+    normalization_stats = compute_and_save_normalization_stats_f(DataLoader(FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json")), save_dir)
+    print("end normalization stats", flush=True)
     train_set = FloatDatasetFeat(path_ds_train, save_dir + "/normalization_stats.json") 
     model = UNet3D()
     params = list(model.parameters())
@@ -187,14 +187,21 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 dir=save_dir,
                 multiple_GPUs=False, 
                 ep=my_epochs, train=True, mov_average=False)
+    
 
     val_dataset = FloatDatasetFeat(path_ds_test, save_dir + "/normalization_stats.json") 
     print("path ds test", path_ds_test)
-    #plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
-    #            variable=my_variable,
-    #            dir=save_dir,
-    #            multiple_GPUs=False, 
-    #            ep=my_epochs, train=False, mov_average=True)
+    plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
+                variable=my_variable,
+                dir=save_dir,
+                multiple_GPUs=False, 
+                ep=my_epochs, train=False, mov_average=False)
+    
+    plot_NN_intermediate_profiles(prepare_dataloader_f(dataset, batch_size=1),
+                variable=my_variable,
+                dir=save_dir,
+                ep=my_epochs, mov_average=False, additional_features=["temp"])
+
 
 
 if __name__ == "__main__":
@@ -209,8 +216,10 @@ if __name__ == "__main__":
     parser.add_argument('--alpha_smooth_reg', default=0.0001, type=float, help='Profiles smoothing coefficient')
     args = parser.parse_args()
 
-    path_ds_train = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
-    path_ds_test = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
+    #path_ds_train = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
+    #path_ds_test = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
+    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
+    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
     save_dir = create_directories_f(["results_trial", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
