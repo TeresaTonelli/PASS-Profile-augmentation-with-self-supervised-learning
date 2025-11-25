@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:50:00
+#SBATCH --time=01:10:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -10,7 +10,7 @@
 
 #SBATCH --output=make_src_outputs/make_train.%j
 
-#SBATCH --account=IscrC_MEDConNN
+#SBATCH --account=OGS23_PRACE_IT_0
 #SBATCH --job-name=job_make_train
 
 #SBATCH --cpus-per-task=1

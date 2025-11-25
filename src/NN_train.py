@@ -200,7 +200,7 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
     plot_NN_intermediate_profiles(prepare_dataloader_f(dataset, batch_size=1),
                 variable=my_variable,
                 dir=save_dir,
-                ep=my_epochs, mov_average=False, additional_features=["temp"])
+                ep=my_epochs, mov_average=False, additional_features=["temp", "psal", "lat"])
 
 
 
