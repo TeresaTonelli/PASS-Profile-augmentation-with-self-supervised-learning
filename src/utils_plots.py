@@ -19,7 +19,7 @@ def from_loader_data_to_train_data_f(input_data):
     n = testing_x.shape[-1]
     l = n//2
     ##Split between training sx and training dx
-    testing_x_sx = testing_x[:, :, :, :, 0:l+1] 
-    testing_x_dx = testing_x[:, :, :, :, l:n+1]
-    assert (testing_x_sx[:, :, :, :, 3] == testing_x_dx[:, :, :, :, 0]).all()
+    testing_x_sx = testing_x[:, 0:l+1, :] 
+    testing_x_dx = testing_x[:, l:n+1, :]
+    assert (testing_x_sx[:, 3, :] == testing_x_dx[:, 0, :]).all()
     return testing_x_sx, testing_x_dx

@@ -361,11 +361,6 @@ class FloatDatasetFeat(Dataset):
         assert year_tensor.shape == lat_tensor.shape == temp_tensor.shape == psal_tensor.shape == doxy_tensor.shape == var_tensor.shape == torch.Size([7, 200])
         
         # [C, D, H] -> [8, 7, 200]
-        input_tensor = torch.stack([year_tensor, day_tensor, lat_tensor, lon_tensor,
-                                    temp_tensor, psal_tensor, doxy_tensor, var_tensor])
-
-        # Reshape for Conv3D (optional)
-        input_tensor = input_tensor.unsqueeze(-1)  # [8, 7, 200, 1]
-        input_tensor = input_tensor.permute(3, 2, 0, 1)
+        input_tensor = var_tensor
 
         return self.column_name, input_tensor

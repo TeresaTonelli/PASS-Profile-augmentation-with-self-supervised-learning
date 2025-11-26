@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 from itertools import islice
 
-from NN_architecture import UNet3D
+from NN_architecture import UNet1D
 from utils_plots import from_loader_data_to_train_data_f
 
 
@@ -61,24 +61,25 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
     print("path conv mod", path_model_conv)
 
-    model = UNet3D() #.to(device)   #AGGIUNTO ORA QUESTO
+    model = UNet1D() #.to(device)   #AGGIUNTO ORA QUESTO
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
 
 
     #for year, day_rad, lat, lon, temp, psal, doxy, output_variable in ds:
     for sample in list(islice(ds, 500)):
-        var = sample[1][:, :, :, -1:, :]  
+        var = sample[1]
+        print("var shape", var.shape) 
         testing_x_tmp = from_loader_data_to_train_data_f(sample)
         testing_x_sx, testing_x_dx = testing_x_tmp  
-        out_d = model(testing_x_sx[:, :, :, :, [0,3]])  
-        out_1pd = model(testing_x_dx[:, :, :, :, [0,3]]) 
-        out_2d = model(torch.cat((out_d[:, :, :, :, 0:1], out_1pd[:, :, :, :, 0:1]), -1))
-        out_1p2d = model(torch.cat((out_d[:, :, :, :, 1:2], out_1pd[:, :, :, :, 1:2]), -1))
+        out_d = model(testing_x_sx[:, [0,3], :])  
+        out_1pd = model(testing_x_dx[:, [0,3], :]) 
+        out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
+        out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
 
-        test_profile_d = out_d[:,:,:,-1:,0:1].squeeze()
-        test_profile_1_2d = out_1pd[:,:,:,-1:,1:2].squeeze()
-        test_profile_2d = ((out_d[:,:,:,-1:, 1:2] + out_2d[:,:,:,-1:,0:1])/2).squeeze()
+        test_profile_d = out_d[:,0:1,:].squeeze()
+        test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
+        test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
         test_profile_1_d = ((out_1pd[:,:,:,-1:,0:1] + out_1p2d[:,:,:,-1:,1:2])/2).squeeze()
         test_profile_1 = ((testing_x_sx[:,:,:,-1:,-1:]+out_2d[:,:,:,-1:,1:2]+out_1p2d[:,:,:,-1:,0:1])/3).squeeze()
 
@@ -170,7 +171,7 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
     print("epoch", ep)
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
     print("path conv mod", path_model_conv)
-    model = UNet3D() #.to(device)   #AGGIUNTO ORA QUESTO
+    model = UNet1D() #.to(device)   #AGGIUNTO ORA QUESTO
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
 
