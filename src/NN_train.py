@@ -154,7 +154,7 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
     plot_NN_intermediate_profiles(prepare_dataloader_f(dataset, batch_size=1),
                 variable=my_variable,
                 dir=save_dir,
-                ep=my_epochs, mov_average=False, additional_features=["temp", "psal", "lat"])
+                ep=my_epochs, mov_average=False)
 
 
 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     #path_ds_test = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
     path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
     path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
-    save_dir = create_directories_f(["results_trial", args.variable], date.today())
+    save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
                  batch_size=args.batch_size,
