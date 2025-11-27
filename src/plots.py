@@ -104,30 +104,28 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
 
         fig, axs = plt.subplots(2, 3, figsize=(10, 8))
         axs[0, 0].plot(test_profile_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        #axs[0, 0].plot(test_profile_d_ma.detach().numpy(), depth_output, color='green', label=f"generated {variable}")
-        axs[0, 0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[0, 0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[0, 0].invert_yaxis()
         axs[0, 0].set_title('I1 comparison')
         axs[0, 1].plot(test_profile_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable} ")
-        #axs[0, 1].plot(test_profile_2d_ma.detach().numpy(), depth_output, color='green', label=f"generated {variable} ")
-        axs[0, 1].plot(var[:,2:3,:].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[0, 1].plot(var[:,2:3,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[0, 1].invert_yaxis()
         axs[0, 1].set_title('I2 comparison')
         axs[0, 2].plot(test_profile_1.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[0, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[0, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[0, 2].invert_yaxis()
         axs[0, 2].set_title('I3 comparison')
         axs[1, 0].plot(test_profile_1_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[1, 0].plot(var[:,4:5,:].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[1, 0].plot(var[:,4:5,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[1, 0].invert_yaxis()
         axs[1, 0].set_title('I4 comparison')
         axs[1, 1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[1, 1].plot(var[:,5:6,:].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[1, 1].plot(var[:,5:6,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[1, 1].invert_yaxis()
         axs[1, 1].set_title('I5 comparison')
-        axs[1, 2].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, color='green', label=f"generated {variable}")
-        axs[1, 2].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated {variable}")
-        axs[1, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"generated {variable}")
+        axs[1, 2].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, color='green', label=f"generated sx {variable}")
+        axs[1, 2].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated dx {variable}")
+        axs[1, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[1, 2].invert_yaxis()
         axs[1, 2].set_title('I3 sx dx comparison')
 
@@ -141,9 +139,6 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False):
     dir_profile = dir + "/NN_intermediate_profile"
     if not os.path.exists(dir_profile):
         os.mkdir(path=dir_profile)
-    dir_profiles_features = dir + "/profiles_features"
-    if not os.path.exists(dir_profiles_features):
-        os.mkdir(path=dir_profiles_features)
     dir_info = dir + "/info.csv"
     info_df = pd.read_csv(dir_info)
     max_pres = 200    #dict_max_pressure[variable]
