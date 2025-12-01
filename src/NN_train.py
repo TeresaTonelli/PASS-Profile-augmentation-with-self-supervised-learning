@@ -172,8 +172,8 @@ if __name__ == "__main__":
 
     #path_ds_train = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
-    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
-    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
+    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
+    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
     save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
