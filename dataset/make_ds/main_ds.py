@@ -35,33 +35,67 @@ print(f"The dataset used is {training_folder}\n"
       f"The variable predicted is {variable}")
 
 
-#make_ds(variable=variable, input_float_directory=input_float_directory, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
-#path_input_csv = os.path.abspath(os.path.join("..", variable))
-#name_input_csv = "toy_ds_sf"
-#name_input_time_sort = "toy_ds_df_time_sorted"
-#csv_data_directory = os.path.abspath(os.path.join("..", variable, name_input_csv + ".csv"))
-#make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+if flag_toy == True:
+      print("flag toy True")
+      #make_ds(variable=variable, input_float_directory=input_float_directory, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+      #path_input_csv = os.path.abspath(os.path.join("..", variable))
+      #name_input_csv = "toy_ds_sf"
+      #name_input_time_sort = "toy_ds_df_time_sorted"
+      #csv_data_directory = os.path.abspath(os.path.join("..", variable, name_input_csv + ".csv"))
+      #make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
-#float_devices = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))]
-#print("float devices", float_devices)
-#for device in float_devices:
-#    make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, device ,name_input_time_sort + ".csv")), 
-#                  flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+      #float_devices = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))]
+      #print("float devices", float_devices)
+      #for device in float_devices:
+      #    make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, device ,name_input_time_sort + ".csv")), 
+      #                  flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
-#list_features = ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy']
-#for device in float_devices:
-#    path_input_time_sorted = os.path.abspath(os.path.join("..", variable, device))
-#    make_ds_n_tuples(variable, list_features, path_input_time_sorted, name_input_time_sort, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
-
-
-#path_original = os.path.abspath(os.path.join("..", variable,  "toy_ds_sf.csv"))
-#path_time_sorted = os.path.abspath(os.path.join("..", variable, float_devices[0], "toy_ds_df_time_sorted.csv"))
-#path_n_tuples = os.path.abspath(os.path.join("..", variable, float_devices[0], "toy_ds_df_time_sorted_n_tuple.csv"))
-#n_tuple_tensors_generation_check(path_original, path_time_sorted, path_n_tuples)
+      #list_features = ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy']
+      #for device in float_devices:
+      #    path_input_time_sorted = os.path.abspath(os.path.join("..", variable, device))
+      #    make_ds_n_tuples(variable, list_features, path_input_time_sorted, name_input_time_sort, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
 
 
-#make_ds_merging(variable, float_devices, path_input_csv, name_input_csv, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+      #path_original = os.path.abspath(os.path.join("..", variable,  "toy_ds_sf.csv"))
+      #path_time_sorted = os.path.abspath(os.path.join("..", variable, float_devices[0], "toy_ds_df_time_sorted.csv"))
+      #path_n_tuples = os.path.abspath(os.path.join("..", variable, float_devices[0], "toy_ds_df_time_sorted_n_tuple.csv"))
+      #n_tuple_tensors_generation_check(path_original, path_time_sorted, path_n_tuples)
 
-#split_time_step_dataframe(os.path.abspath(os.path.join("..", variable, "toy_merged_n_tuple.csv")), variable)
 
-split_train_test_toy(os.path.abspath(os.path.join("..", variable, "toy_merged_n_tuple.csv")), variable)
+      #make_ds_merging(variable, float_devices, path_input_csv, name_input_csv, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+
+      #split_time_step_dataframe(os.path.abspath(os.path.join("..", variable, "toy_merged_n_tuple.csv")), variable)
+
+      #split_train_test_toy(os.path.abspath(os.path.join("..", variable, "toy_merged_n_tuple.csv")), variable)
+
+elif flag_toy == False:
+      print("flag toy False")
+
+      make_ds(variable, input_float_directory, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+      path_input_csv = os.path.abspath(os.path.join("..", variable))
+      name_input_csv = "float_ds_sf_accepted"   #"float_ds_sf_train"
+      csv_data_directory = os.path.abspath(os.path.join("..", variable, name_input_csv + ".csv"))
+      make_ds_float_devices(variable, csv_data_directory , flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+
+      float_devices = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))]
+      name_input_ts = "float_ds_sf_accepted_ts"   
+      for device in float_devices:
+          make_ds_time_sort(variable, path_input_csv, os.path.abspath(os.path.join("..", variable, device ,name_input_ts + ".csv")), 
+                        flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+
+      list_features = ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy']
+      for device in float_devices:
+          path_input_ts = os.path.abspath(os.path.join("..", variable, device))
+          #print("path input ts", path_input_ts)
+          #name_input_test_ts = name_input_ts.replace("_train", "_test")
+          #print("name input test ts", name_input_test_ts)
+          make_ds_n_tuples(variable, list_features, path_input_ts, name_input_ts, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+          #make_ds_n_tuples(variable, list_features, path_input_ts, name_input_test_ts, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)
+
+      path_original = os.path.abspath(os.path.join("..", variable,  "float_ds_sf_accepted.csv"))
+      float_device_check = "SD6901772"
+      path_time_sorted = os.path.abspath(os.path.join("..", variable, float_device_check, "float_ds_sf_accepted_ts.csv"))
+      path_n_tuples = os.path.abspath(os.path.join("..", variable, float_device_check, "float_ds_sf_accepted_ts_nt.csv"))
+      n_tuple_tensors_generation_check(path_original, path_time_sorted, path_n_tuples)
+
+      make_ds_merging(variable, float_devices, path_input_csv, name_input_csv, flag_complete=abs(1-flag_toy), flag_toy=flag_toy)

@@ -12,6 +12,9 @@ from dataset.make_ds.utils import shuffle_dict
 from preprocessing import *
 
 
+dict_physics = {"temp" : "TEMP", "psal": "PSAL", "doxy":"DOXY"}
+
+
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
@@ -95,6 +98,37 @@ def read_date_time(date_time):
     return year, day_rad
 
 
+def make_dict_single_phys_float(path, date_time, var_phys):
+    if not os.path.exists(path):
+        return None
+    year, day_rad = read_date_time(date_time)
+    try:
+        ds = nc.Dataset(path)  
+    except Exception as error:
+        print('Caught this error: ' + repr(error))
+        return dict(), 0
+    lat = ds["LATITUDE"][:].data[0]
+    lon = ds["LONGITUDE"][:].data[0]
+    if dict_physics[var_phys] not in ds.variables.keys():
+        return dict(), 0
+    physic_var = dict_physics[var_phys]
+    print("physic var", physic_var)
+    phys_var_df = ds[f"{physic_var}"][:].data[:]
+    pres_phys_var_df = ds[f"PRES_{physic_var}"][:].data[:]
+    if physic_var == "TEMP":    #QUESTO è da chiedere a GP, io ho solo copiato quelli del nitrato
+        flag_missing_extreme = 1
+        flag_counting_measurement = 1
+    max_pres = dict_max_pressure[physic_var]
+    interval = dict_interval[physic_var]
+    var = discretize(pres_phys_var_df, phys_var_df, max_pres, interval)
+    name_float = path.split("/")[-1][:-3]
+    if var is None:
+        return dict(), 0
+    dict_float = {name_float: [year, day_rad, lat, lon, var]}
+    flag = flag_missing_extreme * flag_counting_measurement  
+    return dict_float, flag
+
+
 #def make_dict_single_float(path, date_time, variable):
 def make_dict_single_float(path, date_time, variable):
     if not os.path.exists(path):
@@ -167,17 +201,8 @@ def make_pandas_df(path_float, variable):
     dict_ds_accepted, dict_ds_removed = make_dataset(path_float, variable)
     dict_ds_accepted = shuffle_dict(dict_ds_accepted)
     pd_ds_removed = pd.DataFrame(dict_ds_removed, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-    train_frac = 0.8
-    train_size = int(train_frac * len(dict_ds_accepted))
-    val_size = len(dict_ds_accepted) - train_size
-    dict_ds_accepted_train = dict_ds_accepted.copy()
-    dict_ds_accepted_test = dict(list(dict_ds_accepted.items())[:val_size])
-    for key_test in dict_ds_accepted_test.keys():
-        dict_ds_accepted_train.pop(key_test, None)
-    pd_ds_accepted_train = pd.DataFrame(dict_ds_accepted_train, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-    pd_ds_accepted_test = pd.DataFrame(dict_ds_accepted_test, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
-    pd_ds_accepted_train.to_csv(f'../{variable}/float_ds_sf_train.csv')
-    pd_ds_accepted_test.to_csv(f'../{variable}/float_ds_sf_test.csv')
+    pd_ds_accepted = pd.DataFrame(dict_ds_accepted, index=['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
+    pd_ds_accepted.to_csv(f'../{variable}/float_ds_sf_accepted.csv')
     pd_ds_removed.to_csv(f'../{variable}/float_ds_sf_removed.csv')
     return
 
@@ -203,10 +228,20 @@ def make_pandas_toy_df(path_float, variable):
     return
 
 
-def make_per_float_df(full_floats_df_train, full_floats_df_test):
-    list_full_floats = []
-    list_devices_float = []
-    pass
+def make_per_float_df(full_floats_ds, variable):
+    df = pd.read_csv(full_floats_ds, header=0)
+    list_full_floats = [name for name in df.columns if name != '']
+    list_devices_float = [name.split("_")[0] for name in list_full_floats]
+    list_devices_float = list(dict.fromkeys(list_devices_float))
+    list_devices_float.remove('Unnamed: 0')
+    if df.columns[0] == '':
+        df = df.drop(df.columns[0], axis=1)
+    for float_device in list_devices_float:
+        filtered_df = df.loc[:, df.columns.str.startswith(float_device)]
+        filtered_df.insert(0, 'Unnamed: 0', ['year', 'day_rad', 'lat', 'lon', 'temp', 'psal', 'doxy', variable])
+        os.makedirs(f'../{variable}/{float_device}', exist_ok=True)
+        filtered_df.to_csv(f'../{variable}/{float_device}/float_ds_df_accepted.csv', index=False)
+    return None 
 
 
 def make_per_float_toy_df(full_floats_ds, variable):
@@ -240,19 +275,22 @@ def list_year_day_df(sorted_dataframe_csv):
     year_day_list = [from_day_rad_to_day(float(year_day_rad_list[i][1])) for i in range(len(year_day_rad_list))]
     return year_day_rad_list, year_day_list 
 
-def make_sorted_year_day_df(dataframe_variable_dir, variable):
+def make_sorted_year_day_df(dataframe_variable_dir, variable, flag_toy=1):
     for subfolder in os.listdir(dataframe_variable_dir):
         if subfolder == 'Unnamed: 0':
             continue
         subfolder_path = os.path.join(dataframe_variable_dir, subfolder)
-        #print("subfolder path", subfolder_path)
         if os.path.isdir(subfolder_path):
             for filename in os.listdir(subfolder_path):
+                mode = filename.split("_")[-1].split(".")[0]
                 df = pd.read_csv(os.path.join(subfolder_path, filename), index_col=0)    #NON SO SE DEVO USARE INDEX_COL = 0, DA CONTROLLARE 
                 df = df.T
                 df_sorted = df.sort_values(by=['year', 'day_rad'])
                 df_sorted = df_sorted.T
-                df_sorted.to_csv(f'/{subfolder_path}/toy_ds_df_time_sorted.csv')
+                if flag_toy == 0:
+                    df_sorted.to_csv(f'/{subfolder_path}/float_ds_sf_{mode}_ts.csv')
+                elif flag_toy == 1:
+                    df_sorted.to_csv(f'/{subfolder_path}/toy_ds_df_time_sorted.csv')
     return None
 
 
@@ -262,10 +300,7 @@ def make_data_n_tuple(dataframe_row, type, i):
         for cell in dataframe_row:
             value = float(cell)
             full_scalar.append(value)
-        output_n_tuples = [full_scalar[j:j+7] for j in range(0, dataframe_row.shape[0] -7 +1)]    #prima c'era range(1, ...)
-        #print("scalar shape", dataframe_row.shape[0] -7 +1)
-        #print("output n tuples scalar", output_n_tuples[1])
-        #print("len output_n_tuples", len(output_n_tuples))
+        output_n_tuples = [full_scalar[j:j+7] for j in range(0, dataframe_row.shape[0] -7 +1)]   
     if type == "tensor":
         tensors = []
         for cell in dataframe_row:
@@ -275,17 +310,11 @@ def make_data_n_tuple(dataframe_row, type, i):
             tensors.append(tensor)
         full_tensor = torch.cat(tensors, dim=1)
         output_n_tuples = [full_tensor[:, j:j+7] for j in range(0, full_tensor.shape[1] - 7 + 1)]
-        #print("tensor shape", full_tensor.shape[1] - 7 + 1)
-        #print("len output_n_tuples", len(output_n_tuples))
-    return output_n_tuples[i]  # return the i-th 7-column slice
+    return output_n_tuples[i] 
 
 
-def is_arithmetic_sequence(tup):   #RICORDA CHE QUA STO FACENDO AMCORA UN PO' DI ESPERIMENTI
-    #print("days int", [int(from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
+def is_arithmetic_sequence(tup):   
     diffs = [tup[i+1] - tup[i] for i in range(len(tup) - 1)]
-    #print(all(np.isclose(d, diffs[0]) for d in diffs))
-    #print("diffs days int", [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
-    #diffs = [int(from_day_rad_to_day(tup[i+1]) - from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)]
     print("days int", [int(from_day_rad_to_day(tup[i])) for i in range(len(tup) - 1)])
     print("diffs", diffs)
     print("condition diffs", [np.isclose(d, diffs[0], rtol=2 * 1e-1, atol=1e-2) for d in diffs])
@@ -295,11 +324,8 @@ def is_arithmetic_sequence(tup):   #RICORDA CHE QUA STO FACENDO AMCORA UN PO' DI
 
 def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_complete=1):
     df = pd.read_csv(os.path.join(path, name_csv_file) + ".csv", index_col=0)
-    #print("df columns", df.columns)
-
     list_all_variables = []
     feature_names = []
- 
     for feature in list_features + [variable]:
         row = df.loc[feature]
         list_feature = []
@@ -311,11 +337,8 @@ def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_co
         for i in range(m): 
             new_tensor = make_data_n_tuple(row, feature_type, i)
             if feature_type == "tensor": 
-                #print("new tensor", new_tensor[:4, :3])
-                #print("new_tensor flatten", new_tensor.flatten()[:12])
-                list_feature.append(new_tensor.flatten().tolist())    #QUA HO AGGIUNTO tolist()
+                list_feature.append(new_tensor.flatten().tolist())  
             elif feature_type == "scalar":
-                #print("new tensor", new_tensor)
                 list_feature.append(new_tensor)
         feature_names.append(f"{feature}")
         list_all_variables.append(list_feature)
@@ -328,7 +351,7 @@ def make_pandas_n_tuple_df(path, name_csv_file, variable, list_features, flag_co
     df_final_time_step = df_final.loc[:, arithmetic_mask]
 
     # Save to CSV
-    df_final_time_step.to_csv(os.path.join(path, f"{name_csv_file}_n_tuple.csv"))
+    df_final_time_step.to_csv(os.path.join(path, f"{name_csv_file}_nt.csv"))
     print("df_final shape:", df_final_time_step.shape)
 
     return df_final
@@ -352,6 +375,47 @@ def dataframe_merging(list_dataframe_files, path, flag):
         name_csv = "toy"
     print("df merged shape", df_merged.shape)
     df_merged.to_csv(os.path.join(path, f"{name_csv}_merged_n_tuple.csv"))
+    return None
+
+
+def data_merge(list_dataframe_files, list_ext_test_dataframe, path, flag):
+    list_dataframe_train = []
+    list_dataframe_test = []
+    list_dataframe_train_shapes = []
+    list_dataframe_test_shapes = []
+    for csv_dataframe in list_dataframe_files:
+        if not os.path.exists(csv_dataframe):
+            continue
+        df = pd.read_csv(csv_dataframe, index_col=0) 
+        k = int(0.1 * df.shape[1])
+        test_indexes = random.sample(range(1, df.shape[1]), k)  
+        train_indexes = [j for j in range(df.shape[1]) if j not in test_indexes]
+        df_train = df.iloc[:, train_indexes].copy()
+        df_test  = df.iloc[:, test_indexes].copy()
+        assert df.shape[1] == df_train.shape[1] + df_test.shape[1]
+        list_dataframe_train.append(df_train)
+        list_dataframe_test.append(df_test)
+        list_dataframe_train_shapes.append(df_train.shape[1])
+        list_dataframe_test_shapes.append(df_test.shape[1])
+    df_train_merged = pd.concat(list_dataframe_train, axis=1)
+    assert df_train_merged.shape[1] == sum(list_dataframe_train_shapes)
+    for csv_ext_dataframe in list_ext_test_dataframe:
+        if not os.path.exists(csv_ext_dataframe):
+            continue
+        df_ext = pd.read_csv(csv_ext_dataframe, index_col=0)
+        list_dataframe_test.append(df_ext)
+        list_dataframe_test_shapes.append(df_ext.shape[1]) 
+    df_test_merged = pd.concat(list_dataframe_test, axis=1)
+    df_test_merged.insert(0, "Unnamed_0", df_ext.iloc[:, 0])
+    assert df_test_merged.shape[1] == sum(list_dataframe_test_shapes) + 1
+    if flag == 1:
+        name_csv = "complete"
+    elif flag == 0:
+        name_csv = "toy"
+    print("df train merged shape", df_train_merged.shape)
+    print("df test merged shape", df_test_merged.shape)
+    df_train_merged.to_csv(os.path.join(path, f"{name_csv}_train_mnt.csv"))
+    df_test_merged.to_csv(os.path.join(path, f"{name_csv}_test_mnt.csv"))
     return None
 
 

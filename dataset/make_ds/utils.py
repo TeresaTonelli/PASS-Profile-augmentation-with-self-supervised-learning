@@ -32,9 +32,6 @@ def triplets_generation_check(triplets_dataset_file):
     df = pd.read_csv(triplets_dataset_file, header=0)
     search_string = "SD6903823_002"
     matching_cols = [col for col in df.columns if search_string in col]
-    print(f"Columns containing '{search_string}':")
-    print(matching_cols)
-    print("\nData from matching columns:")
     for i in range(len(matching_cols)):
         print(df[matching_cols].iloc[2, i])
     
@@ -59,18 +56,12 @@ def n_tuple_tensors_generation_check(original_dataset_file, time_sorted_dataset_
 def split_train_test_toy(csv_dataset, variable):
     df_original = pd.read_csv(csv_dataset, header=0)
     df = df_original.copy()
-    print("df shape", df.shape)
     n = len(df.columns)
-    print("frist column", df.iloc[:, 0])
-    print("n", n)
     k = int(n / 10)
-    print("k", k)
-    test_indexes = random.sample(range(1, n), k)  #[random.randint(1, n-1) for _ in range(k)]
+    test_indexes = random.sample(range(1, n), k)  
     train_indexes = [j for j in range(n) if j not in test_indexes]
-    print("train indexes", train_indexes)
-    print("test indexes", test_indexes)
-    part_train = df.iloc[:, train_indexes]  # First 2 columns
-    part_test = df.iloc[:, test_indexes]  # Last 2 columns
+    part_train = df.iloc[:, train_indexes]  
+    part_test = df.iloc[:, test_indexes] 
     part_test.insert(0, "Unnamed_0", df.iloc[:, 0])
     part_train.to_csv(os.path.abspath(os.path.join("..", variable, "toy_ds_sf_merged_train.csv")), index=False)
     part_test.to_csv(os.path.abspath(os.path.join("..", variable, "toy_ds_sf_merged_test.csv")), index=False)
@@ -83,7 +74,7 @@ def make_ds(variable, input_float_directory, flag_complete=1, flag_toy=0):
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    if flag_complete and not os.path.exists(f"../{variable}/float_ds_sf_train.csv"):
+    if flag_complete and not os.path.exists(f"../{variable}/float_ds_sf_accepted.csv"):
         print("hello making complete ds...")
         make_pandas_df(input_float_directory, variable=variable)
         print("superfloat complete ds created")
@@ -101,17 +92,13 @@ def make_ds_float_devices(variable, csv_data_directory, flag_complete=1, flag_to
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    #single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
-    #print("single float dir", single_float_dir)
     single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))]
     print("single float dir", single_float_dir)
-    #if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_df_train.csv"):
     if flag_complete and single_float_dir == []:
-        print("hello making complete ds...")
+        print("hello making complete device ds...")
         make_per_float_df(csv_data_directory, variable)
         print("superfloat complete ds float devices created")
 
-    #if flag_toy and not os.path.exists(f"../{variable}/{single_float_dir}/toy_ds_df.csv"):
     if flag_toy and single_float_dir == []:
         print("hello making toy ds device float...")
         make_per_float_toy_df(csv_data_directory, variable)
@@ -126,19 +113,14 @@ def make_ds_time_sort(variable, var_data_directory, sorted_float_csv, flag_compl
         os.mkdir(f"../{variable}/")
 
     single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
-    print("single float dir time sort", single_float_dir)
-    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_df_train_time_sorted.csv"):
+    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/float_ds_sf_accepted_ts.csv"):
         print("hello making complete time order ds...")
-        make_sorted_year_day_df(var_data_directory, variable)
-        print(list_year_day_df(sorted_float_csv)[0])
-        print(list_year_day_df(sorted_float_csv)[1])
+        make_sorted_year_day_df(var_data_directory, variable, flag_toy=flag_toy)
         print("superfloat complete ds time order created")
 
     if flag_toy and not os.path.exists(f"../{variable}/{single_float_dir}/toy_ds_df_time_sorted.csv"):
         print("hello making toy ds time order float...")
         make_sorted_year_day_df(var_data_directory, variable)
-        print(list_year_day_df(sorted_float_csv)[0])
-        print(list_year_day_df(sorted_float_csv)[1])
         print("superfloat toy ds time order created")
 
 
@@ -148,9 +130,8 @@ def make_ds_n_tuples(variable, list_features, path_input_csv, name_input_csv, fl
     if not os.path.exists(f"../{variable}/"):
         os.mkdir(f"../{variable}/")
 
-    single_float_dir = os.path.basename(path_input_csv) #[f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
-    print("single float dir time sort", single_float_dir)
-    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/{name_input_csv}_n_tuple.csv"):
+    single_float_dir = os.path.basename(path_input_csv) 
+    if flag_complete and not os.path.exists(f"../{variable}/{single_float_dir}/{name_input_csv}_nt.csv"):
         print("hello making complete n_tuples ds...")
         make_pandas_n_tuple_df(path_input_csv, name_input_csv, variable, list_features, flag_complete)
         print("superfloat complete ds n_tuples created")
@@ -169,11 +150,11 @@ def make_ds_merging(variable, list_devices, path_input_csv, name_input_csv, flag
         os.mkdir(f"../{variable}/")
 
     single_float_dir = [f for f in os.listdir(f"../{variable}/") if os.path.isdir(os.path.join(f"../{variable}/", f))][0]
-    print("single float dir time sort", single_float_dir)
     if flag_complete and not os.path.exists(f"../{variable}/{name_input_csv}_merged_n_tuple.csv"):
         print("hello making complete n_tuples merging ds...")
-        list_dataframe_files = []
-        dataframe_merging(list_dataframe_files, path_input_csv, flag_complete)
+        list_dataframe_files = [os.path.abspath(os.path.join("..", variable,  list_devices[j], "float_ds_sf_accepted_ts_nt.csv")) for j in range(len(list_devices)-1)]
+        list_ext_test_dataframe = [os.path.abspath(os.path.join("..", variable,  list_devices[-1], "float_ds_sf_accepted_ts_nt.csv"))]
+        dataframe_merging(list_dataframe_files, list_ext_test_dataframe, path_input_csv, flag_complete)
         print("superfloat complete ds n_tuples merging created")
 
     if flag_toy and not os.path.exists(f'../{variable}/{name_input_csv}_merged_n_tuple.csv'):

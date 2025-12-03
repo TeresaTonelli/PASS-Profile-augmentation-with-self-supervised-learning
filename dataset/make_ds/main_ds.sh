@@ -22,5 +22,4 @@ conda activate glob_io_env
 python main_ds.py \
     --training_folder SSint_FLOAT \
     --input_float_directory /leonardo_scratch/large/userexternal/ttonelli/OGS/SSint_FLOAT/SUPERFLOAT \
-    --flag_toy True \
     --variable NITRATE \
