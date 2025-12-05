@@ -13,6 +13,8 @@ CHLA_old*
 NITRATE/
 NITRATE_small*
 NITRATE_big*
+TEMP/
+TEMP_small/
 
 #sh files src
 make_src_outputs/

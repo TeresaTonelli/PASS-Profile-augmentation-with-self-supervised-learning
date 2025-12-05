@@ -323,28 +323,28 @@ class FloatDatasetFeat(Dataset):
         lon_list_n = [self.normalize(lon_, "lon_sin") for lon_ in lon_full]          # <- fixed key
 
         # --- Load 1D tensors ---
-        temp_full, _ = from_string_to_tensor_f(self.samples[4], "tensor")
-        psal_full, _ = from_string_to_tensor_f(self.samples[5], "tensor")
-        doxy_full, _ = from_string_to_tensor_f(self.samples[6], "tensor")
-        variable_full, _ = from_string_to_tensor_f(self.samples[7], "tensor")    
+        #temp_full, _ = from_string_to_tensor_f(self.samples[4], "tensor")
+        #psal_full, _ = from_string_to_tensor_f(self.samples[5], "tensor")
+        #doxy_full, _ = from_string_to_tensor_f(self.samples[6], "tensor")
+        variable_full, _ = from_string_to_tensor_f(self.samples[-1], "tensor")   #prima c'era 7 al posto di -1   
 
         # --- Split by time steps ---
         temp_list, psal_list, doxy_list, variable_list = [], [], [], []
         for j in range(n_times):
-            temp_ = torch.tensor([temp_full[i] for i in range(1400) if i % n_times == j])
-            psal_ = torch.tensor([psal_full[i] for i in range(1400) if i % n_times == j])
-            doxy_ = torch.tensor([doxy_full[i] for i in range(1400) if i % n_times == j])
+            #temp_ = torch.tensor([temp_full[i] for i in range(1400) if i % n_times == j])
+            #psal_ = torch.tensor([psal_full[i] for i in range(1400) if i % n_times == j])
+            #doxy_ = torch.tensor([doxy_full[i] for i in range(1400) if i % n_times == j])
             variable_ = torch.tensor([variable_full[i] for i in range(1400) if i % n_times == j])
 
-            temp_list.append(temp_)
-            psal_list.append(psal_)
-            doxy_list.append(doxy_)
+            #temp_list.append(temp_)
+            #psal_list.append(psal_)
+            #doxy_list.append(doxy_)
             variable_list.append(variable_)
 
         # --- Per-depth normalization ---
-        temp_list_n = [self.normalize(temp_list[d], "temp", depth_idx=d) for d in range(len(temp_list))]
-        psal_list_n = [self.normalize(psal_list[d], "psal", depth_idx=d) for d in range(len(psal_list))]
-        doxy_list_n = [self.normalize(doxy_list[d], "doxy", depth_idx=d) for d in range(len(doxy_list))]
+        #temp_list_n = [self.normalize(temp_list[d], "temp", depth_idx=d) for d in range(len(temp_list))]
+        #psal_list_n = [self.normalize(psal_list[d], "psal", depth_idx=d) for d in range(len(psal_list))]
+        #doxy_list_n = [self.normalize(doxy_list[d], "doxy", depth_idx=d) for d in range(len(doxy_list))]
 
         label = 1  # (you can restore your label logic)
 
@@ -353,14 +353,14 @@ class FloatDatasetFeat(Dataset):
         day_tensor = torch.stack([day.repeat(200) for day in day_rad_list_n])
         lat_tensor = torch.stack([lat.repeat(200) for lat in lat_list_n])
         lon_tensor = torch.stack([lon.repeat(200) for lon in lon_list_n])
-        temp_tensor = torch.stack(temp_list_n)
-        psal_tensor = torch.stack(psal_list_n)
-        doxy_tensor = torch.stack(doxy_list_n)
+        #temp_tensor = torch.stack(temp_list_n)
+        #psal_tensor = torch.stack(psal_list_n)
+        #doxy_tensor = torch.stack(doxy_list_n)
         var_tensor = torch.stack(variable_list)
 
-        assert year_tensor.shape == lat_tensor.shape == temp_tensor.shape == psal_tensor.shape == doxy_tensor.shape == var_tensor.shape == torch.Size([7, 200])
+        #assert year_tensor.shape == lat_tensor.shape == temp_tensor.shape == psal_tensor.shape == doxy_tensor.shape == var_tensor.shape == torch.Size([7, 200])
+        assert year_tensor.shape == lat_tensor.shape == var_tensor.shape == torch.Size([7, 200])
         
-        # [C, D, H] -> [8, 7, 200]
         input_tensor = var_tensor
 
         return self.column_name, input_tensor

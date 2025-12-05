@@ -165,15 +165,17 @@ if __name__ == "__main__":
     parser.add_argument('--save_every', type=int, help='How often to save a snapshot')
     parser.add_argument('--batch_size', default=32, type=int, help='Input batch size on each device (default: 32)')
     parser.add_argument('--lr', default=0.001, type=float, help='Learning rate of Adam optimizer')
-    parser.add_argument('--variable', type=str, default="CHLA", choices=["NITRATE", "CHLA", "BBP700"])
+    parser.add_argument('--variable', type=str, default="CHLA", choices=["NITRATE", "CHLA", "BBP700", "TEMP"])
     parser.add_argument('--flag_toy', type=bool, default=False)
     parser.add_argument('--alpha_smooth_reg', default=0.0001, type=float, help='Profiles smoothing coefficient')
     args = parser.parse_args()
 
     #path_ds_train = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_train_full_cp_no_out_strict_20.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_merged_n_tuple.csv" if args.flag_toy else os.getcwd() + f"../dataset/{args.variable}/float_ds_sf_test_full.csv"
-    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
-    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
+    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
+    #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
+    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
+    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
     save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
