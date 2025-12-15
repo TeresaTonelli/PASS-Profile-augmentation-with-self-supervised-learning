@@ -363,4 +363,4 @@ class FloatDatasetFeat(Dataset):
         
         input_tensor = var_tensor
 
-        return self.column_name, input_tensor
+        return self.column_name, input_tensor, day_tensor 

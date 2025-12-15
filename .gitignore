@@ -15,6 +15,7 @@ NITRATE_small*
 NITRATE_big*
 TEMP/
 TEMP_small/
+DOXY/ 
 
 #sh files src
 make_src_outputs/

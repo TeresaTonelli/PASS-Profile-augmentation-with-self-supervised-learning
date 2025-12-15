@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=08:00:00
+#SBATCH --time=01:55:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -25,5 +25,5 @@ python NN_train.py \
     --total_epochs 50 \
     --save_every 25 \
     --batch_size 1 \
-    --lr 0.001 \
+    --lr 0.0001 \
     --variable TEMP \
