@@ -140,7 +140,7 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 variable=my_variable,
                 dir=save_dir,
                 multiple_GPUs=False, 
-                ep=my_epochs, train=True, mov_average=False, split_timesteps=True)
+                ep=my_epochs, train=True, mov_average=False)
     
 
     val_dataset = FloatDatasetFeat(path_ds_test, save_dir + "/normalization_stats.json") 
@@ -149,12 +149,12 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 variable=my_variable,
                 dir=save_dir,
                 multiple_GPUs=False, 
-                ep=my_epochs, train=False, mov_average=False, split_timesteps=True)
+                ep=my_epochs, train=False, mov_average=False)
     
     plot_NN_intermediate_profiles(prepare_dataloader_f(dataset, batch_size=1),
                 variable=my_variable,
                 dir=save_dir,
-                ep=my_epochs, mov_average=False, split_timesteps=True)
+                ep=my_epochs, mov_average=False)
 
 
 
@@ -172,10 +172,10 @@ if __name__ == "__main__":
 
     #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
-    #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
+    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
     path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
+    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
+    #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
     save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,

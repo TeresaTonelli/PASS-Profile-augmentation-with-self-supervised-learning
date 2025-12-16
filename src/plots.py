@@ -67,7 +67,7 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
 
 
     #for year, day_rad, lat, lon, temp, psal, doxy, output_variable in ds:
-    for sample in list(islice(ds, 100)):
+    for sample in list(islice(ds, 50)):
         var = sample[1]
         testing_x_tmp = from_loader_data_to_train_data_f(sample)
         testing_x_sx, testing_x_dx = testing_x_tmp  
@@ -167,7 +167,7 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
 
-    for sample in list(islice(ds, 100)):
+    for sample in list(islice(ds, 50)):
         var = sample[1]
         testing_x_tmp = from_loader_data_to_train_data_f(sample)
         testing_x_sx, testing_x_dx = testing_x_tmp  
@@ -233,6 +233,15 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
 
         #plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png")
         #plt.close()
+
+        #part for the Pearson correlation coefficient
+        with open(dir_profile + "/pearson_output.txt", "a") as f:
+            f.write(f"/profile_{var[:,0:1, 0:1].item()}\n")
+            for j in range(var.shape[1]-1):
+                print("j", j)
+                print("var pearson shape", var[:,j:j+1,:].squeeze().shape)
+                pearson_coeff = np.corrcoef(var[:,j:j+1,:].squeeze().numpy(), var[:,j+1:j+2,:].squeeze().numpy())
+                f.write(str(pearson_coeff[0,1]) + "\n")
 
         if split_timesteps == True:
             days = sample[2][0, :, 0].squeeze() 
