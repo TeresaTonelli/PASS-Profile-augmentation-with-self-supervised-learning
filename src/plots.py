@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from itertools import islice
 
 from NN_architecture import UNet1D
-from utils_plots import from_loader_data_to_train_data_f
+from utils_plots import from_loader_data_to_train_data_f, ssim_plot, mean_ssim_plot
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -238,10 +238,16 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
         with open(dir_profile + "/pearson_output.txt", "a") as f:
             f.write(f"/profile_{var[:,0:1, 0:1].item()}\n")
             for j in range(var.shape[1]-1):
-                print("j", j)
-                print("var pearson shape", var[:,j:j+1,:].squeeze().shape)
                 pearson_coeff = np.corrcoef(var[:,j:j+1,:].squeeze().numpy(), var[:,j+1:j+2,:].squeeze().numpy())
                 f.write(str(pearson_coeff[0,1]) + "\n")
+
+        with open(dir_profile + "/SSIM_output.txt", "a") as f:
+            f.write(f"/profile_{var[:,0:1, 0:1].item()}\n")
+            St, Ssim_t, mu, sigma = mean_ssim_plot(var, data_range=0.4)
+            f.write("mu = " + str(mu) + "\n")
+            f.write("sigma = " + str(sigma) + "\n")
+            for t in range(Ssim_t.shape[0]):
+                f.write(str(Ssim_t[t]) + "\n")
 
         if split_timesteps == True:
             days = sample[2][0, :, 0].squeeze() 

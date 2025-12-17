@@ -27,4 +27,5 @@ python NN_train.py \
     --save_every 2 \
     --batch_size 1 \
     --lr 0.0001 \
-    --variable CHLA \
+    --flag_toy True \
+    --variable DOXY \
