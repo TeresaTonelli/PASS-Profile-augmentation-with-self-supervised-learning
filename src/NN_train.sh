@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:15:00
+#SBATCH --time=02:50:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -23,8 +23,8 @@ conda activate glob_io_env
 #/leonardo_work/IscrC_MEDConNN/SSint_env
 
 python NN_train.py \
-    --total_epochs 20 \
-    --save_every 10 \
+    --total_epochs 40 \
+    --save_every 20 \
     --batch_size 1 \
     --lr 0.001 \
-    --variable NITRATE \
+    --variable DOXY \
