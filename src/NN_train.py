@@ -10,7 +10,7 @@ from NN_architecture import UNet1D
 from plots import plot_loss_f, plot_profiles_f, plot_NN_intermediate_profiles
 from utils_dataset import FloatDatasetFeat, compute_and_save_normalization_stats_f
 from utils_plots import read_losses_median_f
-from utils_src import create_directories_f, save_ds_info_f
+from utils_src import create_directories_f, save_ds_info_f, EMD_loss
 
 print("end installation")
 
@@ -65,7 +65,35 @@ class TrainerFeat:
         #loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
         #loss = 0.2 * loss_1 + 0.00 * loss_1sd + 0.00 * loss_2 + 0.20 * loss_d + 0.20 * loss_2d + 0.20 * loss_1pd + 0.20 * loss_1p2d 
         #loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.0125 * loss_d + 0.0125 * loss_2d + 0.0125 * loss_1pd + 0.0125 * loss_1p2d 
-        loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.1 * loss_bound     #+ 0.025 * loss_reg + 0.025 * loss_reg_2
+        loss_m = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.1 * loss_bound     #+ 0.025 * loss_reg + 0.025 * loss_reg_2
+        #LOSS TRIALS
+        #delta_1 = I_d[:, 0:1, :] - I_01[:, 0:1, :]
+        #delta_2 = I_01[:, 3:, :] - 0.5 * (I_d[:, 1:2, :] + I_d2[:, 0:1, :])
+        #delta_3 = 0.5 * (I_1pd[:, 0:1, :] + I_1pd2[:, 1:2, :]) - I_02[:, 0:1, :]
+        #delta_4 = I_02[:, 3:, :] - I_1pd[:, 1:2, :]
+        #loss_dyn = 0.5 * (torch.abs(delta_1 - delta_2) + torch.abs(delta_3 - delta_4)).mean()
+        #loss = 0.5 * ( 0.45 * loss_1 + 0.45 * loss_2 + 0.1 * loss_bound + loss_dyn )
+        #loss = loss_dyn
+        #interp_1 = (2/3) * I_01[:, 0:1, :] + (1/3) * I_01[:, 3:, :]
+        #interp_2 = (1/3) * I_01[:, 0:1, :] + (2/3) * I_01[:, 3:, :]
+        #interp_4 = (2/3) * I_02[:, 0:1, :] + (1/3) * I_02[:, 3:, :]
+        #interp_5 = (1/3) * I_02[:, 0:1, :] + (2/3) * I_02[:, 3:, :]
+        #loss_interp = (torch.abs(I_d[:, 0:1, :] - interp_1).mean() +torch.abs(0.5*(I_d2[:, 0:1, :]+I_d[:, 1:2, :]) - interp_2).mean() + torch.abs(0.5*(I_1pd[:, 0:1, :] + I_1pd2[:, 1:2, :]) - interp_4).mean() + torch.abs(I_1pd[:, 1:2, :] - interp_5).mean())
+        #loss = loss_dyn - 0.001 * loss_interp
+        #LOSS H + d*W1
+        #loss_H_1 = (torch.nn.functional.smooth_l1_loss(I_d2[:, 1:2, :], targets, beta=0.1) + torch.nn.functional.smooth_l1_loss(I_1pd2[:, 0:1, :], targets, beta=0.1)) / 2 
+        #loss_H_2 = (torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], I_d2[:, 0:1, :], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_1pd[:, 0:1, :], I_1pd2[:, 1:2, :], beta=0.1)) / 2 
+        #loss_H_bound = torch.nn.functional.smooth_l1_loss(self.model_Conv1D(torch.cat((I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :], beta=0.1) + torch.nn.functional.smooth_l1_loss(self.model_Conv1D(torch.cat((I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :], beta=0.1)
+        #loss_EMD_1 = EMD_loss(I_d2[:, 1:2, :], targets) + EMD_loss(I_1pd2[:, 0:1, :], targets)
+        #loss_EMD_2 = EMD_loss(I_d[:, 1:2, :], I_d2[:, 0:1, :]) + EMD_loss(I_1pd[:, 0:1, :], I_1pd2[:, 1:2, :])
+        #loss_EMD_bound = EMD_loss(self.model_Conv1D(torch.cat((I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :]) + EMD_loss(self.model_Conv1D(torch.cat((I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :])
+        #loss = 0.45 * (loss_H_1 + loss_EMD_1) + 0.45 * (loss_H_2 + loss_EMD_2) + 0.1 * (loss_H_bound + loss_EMD_bound).  #12/18_05
+        #loss = 0.45 * (loss_H_1 + 0.1 *loss_EMD_1) + 0.45 * (loss_2) + 0.1 * (loss_H_bound + 0.1 * loss_EMD_bound).      #12/18_06
+        loss_H = (1/3) * (torch.nn.functional.smooth_l1_loss(I_01[:,0:1,:], I_d[:,0:1,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], I_d[:,0:1,:], beta=0.1) + 
+                         torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], targets, beta=0.1))
+        loss_EMD = (1/3) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], targets))
+        #loss = 0.5 * loss_m + 0.5 * (loss_H + 0.1 * loss_EMD).   #12/18_07
+        loss = 0.2 * loss_m + 0.8 * (loss_H + 0.1 * loss_EMD)     #12/18_08
         print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()
@@ -176,7 +204,7 @@ if __name__ == "__main__":
     path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
     #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
+    save_dir = create_directories_f(["results_trial_1Unet_loss_mod", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
                  batch_size=args.batch_size,

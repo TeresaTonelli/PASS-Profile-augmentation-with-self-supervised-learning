@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import torch 
 
 
 def create_directories_f(list_structure, my_date):
@@ -28,3 +29,17 @@ def save_ds_info_f(variable, flag_toy, batch_size, epochs, lr, save_dir, alpha_s
     pd_ds = pd.DataFrame(dict_info)
     pd_ds.to_csv(save_dir + '/info.csv')
     return
+
+
+def EMD_loss(p,q):
+    """
+    Earth Mover's Distance loss function
+    """
+    p_sum = torch.sum(p, dim=-1, keepdim=True)
+    q_sum = torch.sum(q, dim=-1, keepdim=True)
+    p = p/ (p_sum  + 1e-8)
+    q = q/ (q_sum  + 1e-8)
+    CDF_p = torch.cumsum(p, dim=-1)
+    CDF_q = torch.cumsum(q, dim=-1)
+    emd = torch.sum(torch.abs(CDF_p - CDF_q), dim=-1) * 1 
+    return emd.mean()
