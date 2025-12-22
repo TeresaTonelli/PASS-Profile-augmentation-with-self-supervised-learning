@@ -89,11 +89,27 @@ class TrainerFeat:
         #loss_EMD_bound = EMD_loss(self.model_Conv1D(torch.cat((I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :]) + EMD_loss(self.model_Conv1D(torch.cat((I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :])
         #loss = 0.45 * (loss_H_1 + loss_EMD_1) + 0.45 * (loss_H_2 + loss_EMD_2) + 0.1 * (loss_H_bound + loss_EMD_bound).  #12/18_05
         #loss = 0.45 * (loss_H_1 + 0.1 *loss_EMD_1) + 0.45 * (loss_2) + 0.1 * (loss_H_bound + 0.1 * loss_EMD_bound).      #12/18_06
-        loss_H = (1/3) * (torch.nn.functional.smooth_l1_loss(I_01[:,0:1,:], I_d[:,0:1,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], I_d[:,0:1,:], beta=0.1) + 
-                         torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], targets, beta=0.1))
-        loss_EMD = (1/3) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], targets))
+        #loss_H = (1/3) * (torch.nn.functional.smooth_l1_loss(I_01[:,0:1,:], I_d[:,0:1,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], I_d[:,0:1,:], beta=0.1) + 
+        #                 torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], targets, beta=0.1))
+        #loss_EMD = (1/3) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], targets))
         #loss = 0.5 * loss_m + 0.5 * (loss_H + 0.1 * loss_EMD).   #12/18_07
-        loss = 0.2 * loss_m + 0.8 * (loss_H + 0.1 * loss_EMD)     #12/18_08
+        #loss = 0.2 * loss_m + 0.8 * (loss_H + 0.1 * loss_EMD)     #12/18_08, 12/18_09
+        #loss_H = (1/6) * (torch.nn.functional.smooth_l1_loss(I_01[:,0:1,:], I_d[:,0:1,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_d[:, 0:1, :], I_d2[:,0:1,:], beta=0.1) + 
+        #                 torch.nn.functional.smooth_l1_loss(I_d2[:, 0:1, :], targets, beta=0.1) + torch.nn.functional.smooth_l1_loss(I_02[:,0:1,:], I_1pd2[:,1:2,:], beta=0.1) + 
+        #                 torch.nn.functional.smooth_l1_loss(I_1pd2[:, 1:2, :], I_1pd[:,1:2,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_1pd[:, 1:2, :], I_02[:, 3:, :], beta=0.1))
+        loss_EMD = (1/6) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 0:1, :], I_d2[:,0:1,:]) + EMD_loss(I_d2[:, 0:1, :], targets) + 
+                            EMD_loss(I_02[:,0:1,:], I_1pd2[:,1:2,:]) + EMD_loss(I_1pd2[:, 1:2, :], I_1pd[:,1:2,:]) + EMD_loss(I_1pd[:, 1:2, :], I_02[:, 3:, :]))
+        #loss = 0.25 * loss_m + 0.75 * (loss_H + 0.1 * loss_EMD)     #12/22_03
+        #loss = 0.4 * loss_m + 0.6 * (loss_H + 0.2 * loss_EMD)       #12/22_04
+        #loss = loss_m + 0.1 * loss_EMD                              #12/22_05
+        #loss = loss_m + 0.4 * loss_EMD                               #12/22_06
+        x1_lin = (2/3) * I_01[:, 0:1, :] + (1/3) * I_01[:, 0:1, :]
+        x2_lin = (1/3) * I_01[:, 0:1, :] + (2/3) * I_01[:, 0:1, :]
+        x4_lin = (2/3) * I_02[:, 0:1, :] + (1/3) * I_02[:, 0:1, :]
+        x5_lin = (1/3) * I_02[:, 0:1, :] + (2/3) * I_02[:, 0:1, :]
+        loss_res = 0.25 * (torch.nn.functional.mse_loss(I_d[:, 0:1, :], x1_lin) + torch.nn.functional.mse_loss(0.5 * (I_d2[:, 0:1, :]+I_d[:, 1:2, :]), x2_lin) + torch.nn.functional.mse_loss(0.5 * (I_1pd[:, 0:1, :]+I_1pd2[:, 1:2,:]), x4_lin) + torch.nn.functional.mse_loss(I_1pd[:, 1:2, :], x5_lin))
+        #loss = loss_m - 0.1 * loss_res        #12/22_07
+        loss = loss_m - 0.2 * loss_res        #12/22_08
         print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()
@@ -200,10 +216,10 @@ if __name__ == "__main__":
 
     #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
-    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
+    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
+    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
+    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt_reduced.csv"
     save_dir = create_directories_f(["results_trial_1Unet_loss_mod", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
