@@ -65,7 +65,7 @@ class TrainerFeat:
         #loss = 0.25 * loss_1 + 0.05 * loss_1sd + 0.5 * loss_2 + 0.05 * loss_d + 0.05 * loss_2d + 0.05 * loss_1pd + 0.05 * loss_1p2d 
         #loss = 0.2 * loss_1 + 0.00 * loss_1sd + 0.00 * loss_2 + 0.20 * loss_d + 0.20 * loss_2d + 0.20 * loss_1pd + 0.20 * loss_1p2d 
         #loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.0125 * loss_d + 0.0125 * loss_2d + 0.0125 * loss_1pd + 0.0125 * loss_1p2d 
-        loss_m = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.1 * loss_bound     #+ 0.025 * loss_reg + 0.025 * loss_reg_2
+        loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.1 * loss_bound     #+ 0.025 * loss_reg + 0.025 * loss_reg_2
         #LOSS TRIALS
         #delta_1 = I_d[:, 0:1, :] - I_01[:, 0:1, :]
         #delta_2 = I_01[:, 3:, :] - 0.5 * (I_d[:, 1:2, :] + I_d2[:, 0:1, :])
@@ -88,7 +88,8 @@ class TrainerFeat:
         #loss_EMD_2 = EMD_loss(I_d[:, 1:2, :], I_d2[:, 0:1, :]) + EMD_loss(I_1pd[:, 0:1, :], I_1pd2[:, 1:2, :])
         #loss_EMD_bound = EMD_loss(self.model_Conv1D(torch.cat((I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :]) + EMD_loss(self.model_Conv1D(torch.cat((I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :])
         #loss = 0.45 * (loss_H_1 + loss_EMD_1) + 0.45 * (loss_H_2 + loss_EMD_2) + 0.1 * (loss_H_bound + loss_EMD_bound).  #12/18_05
-        #loss = 0.45 * (loss_H_1 + 0.1 *loss_EMD_1) + 0.45 * (loss_2) + 0.1 * (loss_H_bound + 0.1 * loss_EMD_bound).      #12/18_06
+        #loss = 0.45 * (loss_H_1 + 0.1 *loss_EMD_1) + 0.45 * (loss_2) + 0.1 * (loss_H_bound + 0.1 * loss_EMD_bound)      #12/18_06, 12/23_00, 12/23_01
+        #loss = 0.45 * (loss_1 + 0.1 *loss_EMD_1) + 0.45 * (loss_2) + 0.1 * (loss_bound + 0.1 * loss_EMD_bound)       #12/23_02
         #loss_H = (1/3) * (torch.nn.functional.smooth_l1_loss(I_01[:,0:1,:], I_d[:,0:1,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], I_d[:,0:1,:], beta=0.1) + 
         #                 torch.nn.functional.smooth_l1_loss(I_d[:, 1:2, :], targets, beta=0.1))
         #loss_EMD = (1/3) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], I_d[:,0:1,:]) + EMD_loss(I_d[:, 1:2, :], targets))
@@ -97,19 +98,19 @@ class TrainerFeat:
         #loss_H = (1/6) * (torch.nn.functional.smooth_l1_loss(I_01[:,0:1,:], I_d[:,0:1,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_d[:, 0:1, :], I_d2[:,0:1,:], beta=0.1) + 
         #                 torch.nn.functional.smooth_l1_loss(I_d2[:, 0:1, :], targets, beta=0.1) + torch.nn.functional.smooth_l1_loss(I_02[:,0:1,:], I_1pd2[:,1:2,:], beta=0.1) + 
         #                 torch.nn.functional.smooth_l1_loss(I_1pd2[:, 1:2, :], I_1pd[:,1:2,:], beta=0.1) + torch.nn.functional.smooth_l1_loss(I_1pd[:, 1:2, :], I_02[:, 3:, :], beta=0.1))
-        loss_EMD = (1/6) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 0:1, :], I_d2[:,0:1,:]) + EMD_loss(I_d2[:, 0:1, :], targets) + 
-                            EMD_loss(I_02[:,0:1,:], I_1pd2[:,1:2,:]) + EMD_loss(I_1pd2[:, 1:2, :], I_1pd[:,1:2,:]) + EMD_loss(I_1pd[:, 1:2, :], I_02[:, 3:, :]))
+        #loss_EMD = (1/6) * (EMD_loss(I_01[:,0:1,:], I_d[:,0:1,:]) + EMD_loss(I_d[:, 0:1, :], I_d2[:,0:1,:]) + EMD_loss(I_d2[:, 0:1, :], targets) + 
+        #                    EMD_loss(I_02[:,0:1,:], I_1pd2[:,1:2,:]) + EMD_loss(I_1pd2[:, 1:2, :], I_1pd[:,1:2,:]) + EMD_loss(I_1pd[:, 1:2, :], I_02[:, 3:, :]))
         #loss = 0.25 * loss_m + 0.75 * (loss_H + 0.1 * loss_EMD)     #12/22_03
         #loss = 0.4 * loss_m + 0.6 * (loss_H + 0.2 * loss_EMD)       #12/22_04
         #loss = loss_m + 0.1 * loss_EMD                              #12/22_05
         #loss = loss_m + 0.4 * loss_EMD                               #12/22_06
-        x1_lin = (2/3) * I_01[:, 0:1, :] + (1/3) * I_01[:, 0:1, :]
-        x2_lin = (1/3) * I_01[:, 0:1, :] + (2/3) * I_01[:, 0:1, :]
-        x4_lin = (2/3) * I_02[:, 0:1, :] + (1/3) * I_02[:, 0:1, :]
-        x5_lin = (1/3) * I_02[:, 0:1, :] + (2/3) * I_02[:, 0:1, :]
-        loss_res = 0.25 * (torch.nn.functional.mse_loss(I_d[:, 0:1, :], x1_lin) + torch.nn.functional.mse_loss(0.5 * (I_d2[:, 0:1, :]+I_d[:, 1:2, :]), x2_lin) + torch.nn.functional.mse_loss(0.5 * (I_1pd[:, 0:1, :]+I_1pd2[:, 1:2,:]), x4_lin) + torch.nn.functional.mse_loss(I_1pd[:, 1:2, :], x5_lin))
+        #x1_lin = (2/3) * I_01[:, 0:1, :] + (1/3) * I_01[:, 0:1, :]
+        #x2_lin = (1/3) * I_01[:, 0:1, :] + (2/3) * I_01[:, 0:1, :]
+        #x4_lin = (2/3) * I_02[:, 0:1, :] + (1/3) * I_02[:, 0:1, :]
+        #x5_lin = (1/3) * I_02[:, 0:1, :] + (2/3) * I_02[:, 0:1, :]
+        #loss_res = 0.25 * (torch.nn.functional.mse_loss(I_d[:, 0:1, :], x1_lin) + torch.nn.functional.mse_loss(0.5 * (I_d2[:, 0:1, :]+I_d[:, 1:2, :]), x2_lin) + torch.nn.functional.mse_loss(0.5 * (I_1pd[:, 0:1, :]+I_1pd2[:, 1:2,:]), x4_lin) + torch.nn.functional.mse_loss(I_1pd[:, 1:2, :], x5_lin))
         #loss = loss_m - 0.1 * loss_res        #12/22_07
-        loss = loss_m - 0.2 * loss_res        #12/22_08
+        #loss = loss_m - 0.2 * loss_res        #12/22_08
         print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
         loss.backward()
