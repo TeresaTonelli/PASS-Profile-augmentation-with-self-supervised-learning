@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:30:00
+#SBATCH --time=02:55:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -26,5 +26,5 @@ python NN_train.py \
     --total_epochs 50 \
     --save_every 25 \
     --batch_size 1 \
-    --lr 0.0001 \
-    --variable NITRATE \
+    --lr 0.001 \
+    --variable DOXY \
