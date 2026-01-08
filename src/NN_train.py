@@ -7,7 +7,7 @@ import time
 import numpy as np
 
 from NN_architecture import UNet1D
-from plots import plot_loss_f, plot_profiles_f, plot_NN_intermediate_profiles
+from plots import plot_loss_f, plot_profiles_f, plot_NN_intermediate_profiles, linear_interpolation_comparison
 from utils_dataset import FloatDatasetFeat, compute_and_save_normalization_stats_f
 from utils_plots import read_losses_median_f
 from utils_src import create_directories_f, save_ds_info_f, EMD_loss
@@ -200,6 +200,11 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 variable=my_variable,
                 dir=save_dir,
                 ep=my_epochs, mov_average=False)
+    
+    linear_interpolation_comparison(prepare_dataloader_f(dataset, batch_size=1),
+                variable=my_variable,
+                dir=save_dir,
+                ep=my_epochs, mov_average=False)
 
 
 
@@ -217,11 +222,11 @@ if __name__ == "__main__":
 
     #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_merged_train.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_merged_test.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
-    #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
-    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
-    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt_reduced.csv"
-    save_dir = create_directories_f(["results_trial_1Unet_loss_mod", args.variable], date.today())
+    path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt.csv"
+    path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
+    #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
+    #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt_reduced.csv"
+    save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
                  batch_size=args.batch_size,
