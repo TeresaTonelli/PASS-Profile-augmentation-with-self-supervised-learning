@@ -63,3 +63,24 @@ class UNet1D(nn.Module):
 
         # Output
         return self.final(d1)
+    
+
+
+
+
+
+class TrajectoryMLP(nn.Module):
+    def __init__(self, in_channels=7, out_channels=4):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_channels, 128),  # inputs: lat0, lon0, lat3, lon3, u0, v0, dt
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, out_channels)  # outputs: lat1, lon1, lat2, lon2
+        )
+        
+    def forward(self, x):
+        return self.net(x)
