@@ -18,6 +18,23 @@ from preprocessing import *
 
 #DOWNLOAD from Copernicus part
 
+def replace_name_with_currents(path_str):
+    dir_path, filename = os.path.split(path_str)
+    print("dir path", dir_path)
+    print("filename", filename)
+    filename_lower = filename.lower()
+    print("filename lower", filename_lower)
+
+    if "train" in filename_lower:
+        new_filename = "train_currents.csv"
+    elif "test" in filename_lower:
+        new_filename = "test_currents.csv"
+    else:
+        raise ValueError("Neither 'train' nor 'test' found in filename")
+
+    return os.path.join(dir_path, new_filename)
+
+
 def built_in_generate_datetime(year_intervals):
     start_date = date(year_intervals[0], 1, 1)
     end_date = date(year_intervals[1], 12, 31)
@@ -55,6 +72,38 @@ def extract_data_time(dataset_tuple):
     return dates
 
 
+def extract_times(dataset_tuple):
+    ds = pd.read_csv(dataset_tuple, header=None)
+    dates = []
+    for j_1 in range(1, ds.shape[1]):
+        sample_tuple = ds.iloc[:, j_1]
+        years = [float(sample_tuple.iloc[1].strip()) for sample_tuple.iloc[1] in sample_tuple.iloc[1].strip("[]").split(",")]    
+        days_rad = [float(sample_tuple.iloc[2].strip()) for sample_tuple.iloc[2] in sample_tuple.iloc[2].strip("[]").split(",")]
+        times = []
+        for j in range(len(years)):
+            month, day = from_day_rad_to_months_day(days_rad[j])
+            start_date = date(int(years[j]), month, day)
+            times_tuple = start_date.strftime('%Y-%m-%d')
+            times_tuple = times_tuple + 'T00:00:00'
+            times.append(times_tuple)
+        dates.append(times)
+    return dates
+
+
+def extract_lats_lons(dataset_tuple):
+    ds = pd.read_csv(dataset_tuple, header=None)
+    lons = []
+    lats = []
+    for j_1 in range(1, ds.shape[1]):
+        sample_tuple = ds.iloc[:, j_1]
+        lats_tuple = [float(sample_tuple.iloc[3].strip()) for sample_tuple.iloc[3] in sample_tuple.iloc[3].strip("[]").split(",")]
+        lons_tuple = [float(sample_tuple.iloc[4].strip()) for sample_tuple.iloc[4] in sample_tuple.iloc[4].strip("[]").split(",")]
+        lons.append(lons_tuple)
+        lats.append(lats_tuple)
+    return lons, lats
+
+
+
 def download_copernicus_dataset(copernicus_data_directory, var_list, list_times, out_chl_directory, surface_depth=0, time_step="monthly"):
     for i in range(len(list_times)):     
         out_chl_directory_i = out_chl_directory + "/" + str(list_times[i][:4])
@@ -81,6 +130,53 @@ def download_copernicus_dataset(copernicus_data_directory, var_list, list_times,
     return None
 
 
+def download_copernicus_dataset_creation(copernicus_data_directory, var_list, list_lons, list_lats, list_times, out_chl_directory, surface_depth=0, time_step="monthly"):
+    U = []
+    V = []
+    for j in range(len(list_times)):
+        tuple_times = list_times[j]
+        tuple_lons = list_lons[j]
+        tuple_lats = list_lats[j]
+        print("tuple times", tuple_times)
+        tuple_u = [] 
+        tuple_v = []
+        for i in range(len(tuple_times)):     
+            out_chl_directory_i = out_chl_directory + "/" + str(tuple_times[i][:4])
+            out_chl_directory_i = out_chl_directory_i + "/" + str(tuple_times[i][5:7])
+            if time_step == "daily":
+                out_chl_directory_i = out_chl_directory_i + "/" + str(tuple_times[i][8:10])
+            if not os.path.exists(out_chl_directory_i):
+                os.makedirs(out_chl_directory_i)
+            if os.listdir(out_chl_directory_i):
+                continue
+            copernicusmarine.subset(
+            dataset_id=copernicus_data_directory,
+            variables=var_list,
+            minimum_longitude=tuple_lons[i],
+            maximum_longitude=tuple_lons[i],
+            minimum_latitude=tuple_lats[i],
+            maximum_latitude=tuple_lats[i],
+            start_datetime=tuple_times[i],
+            end_datetime=tuple_times[i],
+            minimum_depth=surface_depth,    
+            maximum_depth=surface_depth,
+            output_directory=out_chl_directory_i
+            )
+            #now I want to extract u, v from the nc dataset I download
+            ds_uv = nc.Dataset(os.path.join(out_chl_directory_i, [f for f in os.listdir(out_chl_directory_i) if f.endswith(".nc")][0]))
+            u = np.array(ds_uv.variables["uo"][:])
+            print("u", u.item())
+            print("u type", type(u.item()))
+            v = np.array(ds_uv.variables["vo"][:])
+            print("v", v.item())
+            print("v type", type(v.item()))
+            tuple_u.append(u.item())
+            tuple_v.append(v.item())
+        U.append(tuple_u)
+        V.append(tuple_v)
+    return U, V
+
+
 
 def pypeline_download_copernicus_dataset(dataset_tuple, list_copernicus_data_directories, list_vars, years_interval, list_var_folders, surface_depth, list_time_resolution):
     #list_time = built_in_generate_datetime([years_interval[0], years_interval[1]])
@@ -105,6 +201,47 @@ if Copernicus_download == True:
     surface_depth = 1.0182366371154785
     list_time_resolution = ["daily"]   
     pypeline_download_copernicus_dataset(dataset_tuple, copernicus_data_directory, list_vars, years_interval, list_var_folders, surface_depth, list_time_resolution)
+
+
+
+def pypeline_download_creation(dataset_tuple, list_copernicus_data_directories, list_vars, list_var_folders, surface_depth, list_time_resolution):
+    list_time = extract_times(dataset_tuple)
+    list_lons, list_lats = extract_lats_lons(dataset_tuple)
+    print("len list time", len(list_time))
+    print("list time", list_time[:8])
+    for i in range(len(list_copernicus_data_directories)):
+        copernicus_data_directory = list_copernicus_data_directories[i]
+        print("copernicus dataset", copernicus_data_directory)
+        out_directory = "/leonardo_scratch/large/userexternal/ttonelli/OGS/" + list_var_folders[i]   
+        time_step = list_time_resolution[i]
+        U, V = download_copernicus_dataset_creation(copernicus_data_directory, list_vars, list_lons, list_lats, list_time, out_directory, surface_depth, time_step) 
+        ds = pd.read_csv(dataset_tuple, header=None)
+        df = pd.DataFrame({
+            "year": [[float(ds.iloc[:, l].iloc[1].strip()) for ds.iloc[:, l].iloc[1] in ds.iloc[:, l].iloc[1].strip("[]").split(",")] for l in range(1, ds.shape[1])],
+            "day_rad": [[float(ds.iloc[:, l].iloc[2].strip()) for ds.iloc[:, l].iloc[2] in ds.iloc[:, l].iloc[2].strip("[]").split(",")] for l in range(1, ds.shape[1])],
+            "lat": list_lats,
+            "lon": list_lons,
+            "u": U,
+            "v": V,
+        })
+        df_T = df.T
+        df_T.columns = [f"sample_{i}" for i in range(df_T.shape[1])]
+        currents_csv_dir = replace_name_with_currents(dataset_tuple)
+        print("currents csv dir", currents_csv_dir)
+        df_T.to_csv(currents_csv_dir)
+
+
+
+Copernicus_download_gen = True
+if Copernicus_download_gen == True:
+    dataset_tuple = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/NITRATE/complete_test_mnt.csv"
+    copernicus_data_directory = ["cmems_mod_med_phy-cur_my_4.2km_P1D-m"]
+    list_vars = ["vo", "uo"]    #da chiedere a GC se ne devo aggiungere altre
+    years_interval = [2014, 2021]   #Anche qua si può cambiare, in base a quanti dati ho
+    list_var_folders = ["currents_Copernicus_data"]
+    surface_depth = 1.0182366371154785
+    list_time_resolution = ["daily"]   
+    pypeline_download_creation(dataset_tuple, copernicus_data_directory, list_vars, list_var_folders, surface_depth, list_time_resolution)
 
 
 

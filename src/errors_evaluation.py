@@ -56,3 +56,5 @@ def RMSE_comparison(ds, dir, variable, ep=100, mov_average=False, m=50):
         f.write(f"median: {[torch.median(RMSEs[:, i]) for i in range(rmse_sample.shape[1])]} \n")
 
     return None
+
+
