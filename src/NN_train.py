@@ -6,7 +6,7 @@ from datetime import date
 import time
 import numpy as np
 
-from errors_evaluation import RMSE_comparison
+from errors_evaluation import RMSE_comparison, RMSE_float_linear
 from NN_architecture import UNet1D
 from plots import plot_loss_f, plot_profiles_f, plot_NN_intermediate_profiles, linear_interpolation_comparison
 from utils_dataset import FloatDatasetFeat, compute_and_save_normalization_stats_f
@@ -211,6 +211,10 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 variable=my_variable,
                 dir=save_dir,
                 ep=my_epochs, mov_average=False)
+    
+    RMSE_float_linear(prepare_dataloader_f(val_dataset, batch_size=1),
+                variable=my_variable,
+                dir=save_dir, mov_average=False)
 
 
 

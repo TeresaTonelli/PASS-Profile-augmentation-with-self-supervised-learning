@@ -289,8 +289,15 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
 def linear_interpolation_comparison(ds, dir, variable, ep=100, mov_average=False, split_timesteps=False):
     dir_model = dir + "/model"
     dir_profile = dir + "/linear_interpolation_comparison"
+    dir_single_comparison = dir + "/linear_interpolation_single_comparison"
     if not os.path.exists(dir_profile):
         os.mkdir(path=dir_profile)
+    if not os.path.exists(dir_single_comparison):
+        os.mkdir(path=dir_single_comparison)
+    for j in [1,2,4,5]:
+        dir_single_comparison_j = dir_single_comparison + f"/prediction_{j}"
+        if not os.path.exists(dir_single_comparison_j):
+            os.mkdir(path=dir_single_comparison_j)
     dir_info = dir + "/info.csv"
     info_df = pd.read_csv(dir_info)
     max_pres = 200    #dict_max_pressure[variable]
@@ -302,7 +309,7 @@ def linear_interpolation_comparison(ds, dir, variable, ep=100, mov_average=False
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
 
-    for sample in list(islice(ds, 50)):
+    for sample in list(islice(ds, 150)):
         var = sample[1]
         testing_x_tmp = from_loader_data_to_train_data_f(sample)
         testing_x_sx, testing_x_dx = testing_x_tmp  
@@ -373,3 +380,20 @@ def linear_interpolation_comparison(ds, dir, variable, ep=100, mov_average=False
         else:
             plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png")
             plt.close()
+
+
+        #single comparison 1
+        save_dir_indexes = ["1", "2", "4", "5"]
+        outputs_1DUNet = [test_profile_d, test_profile_2d, test_profile_1_d, test_profile_1_2d]
+        outputs_floats = [testing_x_sx[:, 1:2, :], testing_x_sx[:, 2:3, :], testing_x_dx[:, 1:2, :], testing_x_dx[:, 2:3, :]]
+        outputs_linear = [out_1_linear, out_2_linear, out_4_linear, out_5_linear]
+
+        for l in range(len(outputs_1DUNet)):
+            plt.plot(outputs_1DUNet[l].detach().numpy(), depth_output, color='blue', label=f"1DUnet 1")
+            plt.plot(outputs_floats[l].squeeze().detach().numpy(), depth_output, color='red', label=f"ARGO-float 1")
+            plt.plot(outputs_linear[l].squeeze(), depth_output, color='orange', label=f"Linear interpolation 1")
+            plt.gca().invert_yaxis()
+            plt.legend(loc="lower left")
+            plt.savefig(dir_single_comparison + f"/prediction_{save_dir_indexes[l]}/profile_{var[:,0:1, 0:1].item()}.png")
+            plt.close()
+
