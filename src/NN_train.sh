@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=03:45:00
+#SBATCH --time=00:05:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -10,7 +10,7 @@
 
 #SBATCH --output=make_src_outputs/make_train_1Unet.%j
 
-#SBATCH --account=IscrC_MEDConNN 
+#SBATCH --account=OGS23_PRACE_IT_0 
 #SBATCH --job-name=job_1Unet_make_train
 
 #SBATCH --cpus-per-task=1
@@ -23,8 +23,8 @@ conda activate glob_io_env
 #/leonardo_work/IscrC_MEDConNN/SSint_env
 
 python NN_train.py \
-    --total_epochs 50 \
-    --save_every 25 \
+    --total_epochs 20 \
+    --save_every 10 \
     --batch_size 1 \
     --lr 0.001 \
-    --variable DOXY \
+    --variable NITRATE \

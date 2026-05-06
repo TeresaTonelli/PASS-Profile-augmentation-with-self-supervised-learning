@@ -43,7 +43,7 @@ def torch_moving_average_f(x, window_size):
 def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=False, mov_average=False, split_timesteps=False):
     dir_model = dir + "/model"
     if train == False:
-        dir_profile = dir + "/profile"
+        dir_profile = dir + "/profile_opt_poster"
         if not os.path.exists(dir_profile):
             os.mkdir(path=dir_profile)
     else:
@@ -67,7 +67,7 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
 
 
     #for year, day_rad, lat, lon, temp, psal, doxy, output_variable in ds:
-    for sample in list(islice(ds, 50)):
+    for sample in list(islice(ds, 10)):
         var = sample[1]
         testing_x_tmp = from_loader_data_to_train_data_f(sample)
         testing_x_sx, testing_x_dx = testing_x_tmp  
@@ -82,7 +82,7 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
         test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
         test_profile_1 = ((testing_x_sx[:,-1:,:]+out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/3).squeeze()
 
-        depth_output = np.linspace(0, max_pres-1, len(test_profile_1.detach().numpy()))  #prima era [0,0,:]
+        depth_output = np.linspace(0, max_pres-1, len(test_profile_1.detach().numpy())) #* 5  #prima era [0,0,:]
         depth_variable = np.linspace(0, max_pres-1, len(test_profile_1.detach().numpy()))    #prima era [0,0,:]
 
         if variable == "BBP700":
@@ -101,38 +101,50 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
             out_1p2d_ma = torch_moving_average_f(out_1p2d[:,0:1,:].squeeze().view(1, 1, -1), 3)
             #var_ma = torch_moving_average_f(var[:,:,:,-1:,3:4].squeeze().view(1, 1, -1), 3)
 
-        fig, axs = plt.subplots(2, 3, figsize=(10, 8))
+        fig, axs = plt.subplots(2, 3, figsize=(15, 12))
         axs[0, 0].plot(test_profile_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[0, 0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[0, 0].invert_yaxis()
         axs[0, 0].legend(loc="lower left")
-        axs[0, 0].set_title('I1 comparison')
+        axs[0, 0].set_title(r"$x_{i+{\frac{\delta t}{3}}}$", fontsize=16)
+        axs[0, 0].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+        axs[0, 0].set_ylabel(r"depth [$m$]")
         axs[0, 1].plot(test_profile_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable} ")
         axs[0, 1].plot(var[:,2:3,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[0, 1].invert_yaxis()
         axs[0, 1].legend(loc="lower left")
-        axs[0, 1].set_title('I2 comparison')
+        axs[0, 1].set_title(r"$x_{i+{\frac{2\delta t}{3}}}$", fontsize=16)
+        axs[0, 1].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+        axs[0, 1].set_ylabel(r"depth [$m$]")
         axs[0, 2].plot(test_profile_1.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[0, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[0, 2].invert_yaxis()
         axs[0, 2].legend(loc="lower left")
-        axs[0, 2].set_title('I3 comparison')
+        axs[0, 2].set_title(r"$x_{i+{\delta t}}$", fontsize=16)
+        axs[0, 2].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+        axs[0, 2].set_ylabel(r"depth [$m$]")
         axs[1, 0].plot(test_profile_1_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[1, 0].plot(var[:,4:5,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[1, 0].invert_yaxis()
         axs[1, 0].legend(loc="lower left")
-        axs[1, 0].set_title('I4 comparison')
+        axs[1, 0].set_title(r"$x_{i+{\frac{4 \delta t}{3}}}$", fontsize=16)
+        axs[1, 0].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+        axs[1, 0].set_ylabel(r"depth [$m$]")
         axs[1, 1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[1, 1].plot(var[:,5:6,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[1, 1].invert_yaxis()
         axs[1, 1].legend(loc="lower left")
-        axs[1, 1].set_title('I5 comparison')
-        axs[1, 2].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, color='green', label=f"generated sx {variable}")
-        axs[1, 2].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated dx {variable}")
+        axs[1, 1].set_title(r"$x_{i+{\frac{5 \delta t}{3}}}$", fontsize=16)
+        axs[1, 1].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+        axs[1, 1].set_ylabel(r"depth [$m$]")
+        axs[1, 2].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, color='green', label=f"generated tc1 {variable}")
+        axs[1, 2].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated tc2 {variable}")
         axs[1, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
         axs[1, 2].invert_yaxis()
         axs[1, 2].legend(loc="lower left")
-        axs[1, 2].set_title('I3 sx dx comparison')
+        axs[1, 2].set_title(r"$x_{i+{\delta t}}$" ": dual cycle", fontsize=16)
+        axs[1, 2].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+        axs[1, 2].set_ylabel(r"depth [$m$]")
 
         #plt.legend()
 
@@ -143,11 +155,11 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
             dir_timestep = dir_profile + f"/day_{str(int(d))}" 
             if not os.path.exists(dir_timestep):
                 os.mkdir(path=dir_timestep)
-            plt.savefig(dir_timestep + f"/profile_{var[:,0:1, 0:1].item()}.png")
+            plt.savefig(dir_timestep + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=800)
             plt.close()
 
         else:
-            plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png")
+            plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=800)
             plt.close()
 
 

@@ -6,7 +6,7 @@ from datetime import date
 import time
 import numpy as np
 
-from errors_evaluation import RMSE_comparison, RMSE_float_linear
+from errors_evaluation import RMSE_comparison, RMSE_float_linear, error_evaluation_boxplots
 from NN_architecture import UNet1D
 from plots import plot_loss_f, plot_profiles_f, plot_NN_intermediate_profiles, linear_interpolation_comparison
 from utils_dataset import FloatDatasetFeat, compute_and_save_normalization_stats_f
@@ -175,18 +175,18 @@ def prepare_dataloader_f(dataset: Dataset, batch_size: int):
 def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: str, path_ds_test: str, save_dir: str, my_lr: float, alpha_smooth_reg: float, my_variable: str, my_epochs:int):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("path ds train", path_ds_train)
-    dataset, model, optimizer = load_train_objs_f(path_ds_train, save_dir, my_lr)
-    train_data = prepare_dataloader_f(dataset, batch_size)
-    trainer = TrainerFeat(model, train_data, optimizer, device, save_every, alpha_smooth_reg)
-    trainer.train_f(total_epochs, save_dir, batch_size, save_every, my_lr)
-    train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
-    plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
+    #dataset, model, optimizer = load_train_objs_f(path_ds_train, save_dir, my_lr)
+    #train_data = prepare_dataloader_f(dataset, batch_size)
+    #trainer = TrainerFeat(model, train_data, optimizer, device, save_every, alpha_smooth_reg)
+    #trainer.train_f(total_epochs, save_dir, batch_size, save_every, my_lr)
+    #train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
+    #plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
 
-    plot_profiles_f(prepare_dataloader_f(dataset, batch_size=1),
-                variable=my_variable,
-                dir=save_dir,
-                multiple_GPUs=False, 
-                ep=my_epochs, train=True, mov_average=False)
+    #plot_profiles_f(prepare_dataloader_f(dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            multiple_GPUs=False, 
+    #            ep=my_epochs, train=True, mov_average=False)
     
 
     val_dataset = FloatDatasetFeat(path_ds_test, save_dir + "/normalization_stats.json") 
@@ -197,24 +197,27 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
                 multiple_GPUs=False, 
                 ep=my_epochs, train=False, mov_average=False)
     
-    plot_NN_intermediate_profiles(prepare_dataloader_f(dataset, batch_size=1),
-                variable=my_variable,
-                dir=save_dir,
-                ep=my_epochs, mov_average=False)
+    #plot_NN_intermediate_profiles(prepare_dataloader_f(dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            ep=my_epochs, mov_average=False)
     
-    linear_interpolation_comparison(prepare_dataloader_f(dataset, batch_size=1),
-                variable=my_variable,
-                dir=save_dir,
-                ep=my_epochs, mov_average=False)
+    #linear_interpolation_comparison(prepare_dataloader_f(dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            ep=my_epochs, mov_average=False)
     
-    RMSE_comparison(prepare_dataloader_f(dataset, batch_size=1),
-                variable=my_variable,
-                dir=save_dir,
-                ep=my_epochs, mov_average=False)
+    #RMSE_comparison(prepare_dataloader_f(val_dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            ep=my_epochs, mov_average=False)
     
-    RMSE_float_linear(prepare_dataloader_f(val_dataset, batch_size=1),
-                variable=my_variable,
-                dir=save_dir, mov_average=False)
+    #RMSE_float_linear(prepare_dataloader_f(val_dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir, mov_average=False)
+    
+    #error_evaluation_boxplots(os.path.join(save_dir, "error_evaluation", "RMSE_file.txt"), os.path.join(save_dir, "error_evaluation", "RMSE_float_linear_file.txt"), 
+    #                          os.path.join(save_dir, "error_evaluation"))
 
 
 
@@ -236,7 +239,8 @@ if __name__ == "__main__":
     path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
     #path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_train_mnt_reduced.csv"
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt_reduced.csv"
-    save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
+    #save_dir = create_directories_f(["results_trial_1Unet", args.variable], date.today())
+    save_dir = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/src/results_trial_1Unet/NITRATE/2025-12-17_1"
     save_ds_info_f(variable=args.variable,
                  flag_toy=args.flag_toy,
                  batch_size=args.batch_size,
