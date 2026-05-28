@@ -1,4 +1,5 @@
 #folders
+__pycache__/
 
 
 # sh files dataset 
@@ -19,3 +20,6 @@ DOXY/
 
 #sh files src
 make_src_outputs/
+
+#images
+*.png

@@ -258,8 +258,9 @@ class FloatDatasetFeat_OLD(Dataset):
 
 class FloatDatasetFeat(Dataset):
 
-    def __init__(self, path_df=None, stats_path="normalization_stats.json"):
+    def __init__(self, mode, path_df=None, stats_path="normalization_stats.json"):
         super().__init__()
+        self.mode = mode
         if path_df is not None:
             self.path_df = path_df
             self.df = pd.read_csv(self.path_df)
@@ -272,95 +273,85 @@ class FloatDatasetFeat(Dataset):
         else:
             self.norm_stats = None  
 
-    # -------------------------------
-    # UPDATED normalize function
-    # -------------------------------
+
     def normalize(self, x, name, depth_idx=None):
         if self.norm_stats is None or name not in self.norm_stats:
             return x
 
-        # Handle global (non-depth-dependent) variables
         if name not in ["temp", "psal", "doxy"]:
             mean, std = self.norm_stats[name]
             return (x - mean) / std
 
-        # Handle per-depth normalization
         depth_key = f"depth_{depth_idx}"
         if depth_key in self.norm_stats[name]:
             mean, std = self.norm_stats[name][depth_key]
             return (x - mean) / std
         else:
-            # Fallback: if missing stats, return unchanged
             return x
+
 
     def __len__(self):
         """Denotes the total number of samples"""
         return len(self.df.iloc[0, :]) - 1
 
+
     def __getitem__(self, index):
         """Generates one sample of data"""
 
-        # --- Load and parse data ---
         try:
-            #print("index", index, flush=True)
             self.samples = self.df.iloc[:, index + 1].tolist()
-            #print("self samples", self.samples, flush=True) 
             self.column_name = self.df.columns[index + 1]
-            #print("self column", self.column_name, flush=True)
         except Exception as error:
             raise RuntimeError(f"Error accessing sample {index}: {error}")
 
-        # Convert string data to tensors (your helper)
-        year_full, _ = from_string_to_tensor_f(self.samples[0], "scalar")
         day_rad_full, _ = from_string_to_tensor_f(self.samples[1], "scalar")
-        lat_full, _ = from_string_to_tensor_f(self.samples[2], "scalar")
-        lon_full, _ = from_string_to_tensor_f(self.samples[3], "scalar")
+        day_rad_list_n = [self.normalize(day_, "day_sin") for day_ in day_rad_full] 
 
-        # --- Normalize scalar variables ---
-        year_list_n = [self.normalize(year_, "year") for year_ in year_full]
-        day_rad_list_n = [self.normalize(day_, "day_sin") for day_ in day_rad_full]  # <- fixed key
-        lat_list_n = [self.normalize(lat_, "lat_sin") for lat_ in lat_full]          # <- fixed key
-        lon_list_n = [self.normalize(lon_, "lon_sin") for lon_ in lon_full]          # <- fixed key
-
-        # --- Load 1D tensors ---
-        #temp_full, _ = from_string_to_tensor_f(self.samples[4], "tensor")
-        #psal_full, _ = from_string_to_tensor_f(self.samples[5], "tensor")
-        #doxy_full, _ = from_string_to_tensor_f(self.samples[6], "tensor")
-        variable_full, _ = from_string_to_tensor_f(self.samples[-1], "tensor")   #prima c'era 7 al posto di -1   
-
-        # --- Split by time steps ---
-        temp_list, psal_list, doxy_list, variable_list = [], [], [], []
+        variable_full, _ = from_string_to_tensor_f(self.samples[-2], "tensor")      
+        variable_list = []
         for j in range(n_times):
-            #temp_ = torch.tensor([temp_full[i] for i in range(1400) if i % n_times == j])
-            #psal_ = torch.tensor([psal_full[i] for i in range(1400) if i % n_times == j])
-            #doxy_ = torch.tensor([doxy_full[i] for i in range(1400) if i % n_times == j])
             variable_ = torch.tensor([variable_full[i] for i in range(1400) if i % n_times == j])
-
-            #temp_list.append(temp_)
-            #psal_list.append(psal_)
-            #doxy_list.append(doxy_)
             variable_list.append(variable_)
 
-        # --- Per-depth normalization ---
-        #temp_list_n = [self.normalize(temp_list[d], "temp", depth_idx=d) for d in range(len(temp_list))]
-        #psal_list_n = [self.normalize(psal_list[d], "psal", depth_idx=d) for d in range(len(psal_list))]
-        #doxy_list_n = [self.normalize(doxy_list[d], "doxy", depth_idx=d) for d in range(len(doxy_list))]
+        variable_surf_full, _ = from_string_to_tensor_f(self.samples[-1], "tensor")      
+        variable_surf_list = []
+        for j in range(n_times):
+            variable_s = torch.tensor([variable_surf_full[i] for i in range(7*7*7) if j*7*7 < i < (j*1)*7*7])
+            variable_surf_list.append(variable_s)
 
-        label = 1  # (you can restore your label logic)
-
-        # --- Stack tensors ---
-        year_tensor = torch.stack([year.repeat(200) for year in year_list_n])
         day_tensor = torch.stack([day.repeat(200) for day in day_rad_list_n])
-        lat_tensor = torch.stack([lat.repeat(200) for lat in lat_list_n])
-        lon_tensor = torch.stack([lon.repeat(200) for lon in lon_list_n])
-        #temp_tensor = torch.stack(temp_list_n)
-        #psal_tensor = torch.stack(psal_list_n)
-        #doxy_tensor = torch.stack(doxy_list_n)
         var_tensor = torch.stack(variable_list)
+        try:
+            if self.mode == "mode_A":
+                variable_surf_list = [torch.mean(var_s) for var_s in variable_surf_list]
+                assert len(variable_surf_list) == 7
+                assert variable_surf_list[1].shape == torch.Size([1])
+                var_surf_tensor = torch.stack(variable_surf_list)
+                var_tensor[:, 0] = var_surf_tensor
+                #Forse qua sarà da fare un qualche reshape
+            elif self.mode == "mode_B":
+                variable_surf_list = [torch.mean(var_s) for var_s in variable_surf_list]
+                assert len(variable_surf_list) == 7
+                assert variable_surf_list[1].shape == torch.Size([1])
+                var_surf_tensor = torch.stack(variable_surf_list)
+                #Forse qua ci sarà da fare qualche reshape
+            elif self.mode == "mode_C":
+                variable_list = [var_s.reshape(7,7) for var_s in variable_surf_list]
+                assert len(variable_surf_list) == 7
+                assert variable_surf_list[1].shape == torch.Size([7,7])
+                var_surf_tensor = torch.stack(variable_surf_list)
+                assert var_surf_tensor[:, :, 2] == variable_surf_list[2]
+                assert var_surf_tensor.shape == torch.Size([7,7,7])
+        except Exception as error:
+            print(f"Mode {self.mode} is invalid")
 
-        #assert year_tensor.shape == lat_tensor.shape == temp_tensor.shape == psal_tensor.shape == doxy_tensor.shape == var_tensor.shape == torch.Size([7, 200])
-        assert year_tensor.shape == lat_tensor.shape == var_tensor.shape == torch.Size([7, 200])
+
+
+        assert day_tensor.shape == var_tensor.shape == torch.Size([7, 200])
         
         input_tensor = var_tensor
 
-        return self.column_name, input_tensor, day_tensor 
+        if self.mode == "mode_A":
+            return self.column_name, input_tensor, day_tensor
+        else:
+            return self.column_name, input_tensor, var_surf_tensor, day_tensor 
