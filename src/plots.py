@@ -7,8 +7,8 @@ import torch
 import torch.nn.functional as F
 from itertools import islice
 
-from NN_architecture import UNet1D
-from utils_plots import from_loader_data_to_train_data_f, ssim_plot, mean_ssim_plot
+from NN_architecture import UNet1D, MLP_1D_mode, UNet_1D_mode
+from utils_plots import from_loader_data_to_train_data_f, ssim_plot, mean_ssim_plot, get_evaluation_model_0D, get_evaluation_model_1D
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,10 +40,10 @@ def torch_moving_average_f(x, window_size):
     return output_ma.squeeze()
 
 
-def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=False, mov_average=False, split_timesteps=False):
+def plot_profiles_f(ds, dir, variable, exp_mode, multiple_GPUs = False, ep=100, train=False, mov_average=False, split_timesteps=False):
     dir_model = dir + "/model"
     if train == False:
-        dir_profile = dir + "/profile_opt_poster"
+        dir_profile = dir + "/profile_test"
         if not os.path.exists(dir_profile):
             os.mkdir(path=dir_profile)
     else:
@@ -56,41 +56,45 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
     max_pres = 200    #dict_max_pressure[variable]
     interval = 1      #dict_interval[variable]
 
-    # Path of the saved models
-    print("epoch", ep)
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
-    print("path conv mod", path_model_conv)
 
-    model = UNet1D() #.to(device)   #AGGIUNTO ORA QUESTO
+    models = {"mode_0D": UNet1D, "mode_1D": UNet_1D_mode} 
+    model = models[exp_mode]()
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
+    if exp_mode == "mode_1D":
+        path_model_mlp = dir_model + "/model_mlp_" + str(ep) + ".pt"
+        model_MLP = MLP_1D_mode()
+        model_MLP.load_state_dict(torch.load(path_model_mlp))
+        model_MLP.eval()
 
 
     #for year, day_rad, lat, lon, temp, psal, doxy, output_variable in ds:
     for sample in list(islice(ds, 10)):
         var = sample[1]
-        testing_x_tmp = from_loader_data_to_train_data_f(sample)
-        testing_x_sx, testing_x_dx = testing_x_tmp  
-        out_d = model(testing_x_sx[:, [0,3], :])  
-        out_1pd = model(testing_x_dx[:, [0,3], :]) 
-        out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
-        out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
 
-        test_profile_d = out_d[:,0:1,:].squeeze()
-        test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
-        test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
-        test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
-        test_profile_1 = ((testing_x_sx[:,-1:,:]+out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/3).squeeze()
+        if exp_mode == "mode_0D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_0D(exp_mode, model, sample)
+
+        elif exp_mode == "mode_1D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_1D(exp_mode, model, model_MLP, sample)
+        
+        #testing_x_tmp = from_loader_data_to_train_data_f(sample)
+        #testing_x_sx, testing_x_dx = testing_x_tmp  
+        #out_d = model(testing_x_sx[:, [0,3], :])  
+        #out_1pd = model(testing_x_dx[:, [0,3], :]) 
+        #out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
+        #out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
+
+        #test_profile_d = out_d[:,0:1,:].squeeze()
+        #test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
+        #test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
+        #test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
+        #test_profile_1 = ((testing_x_sx[:,-1:,:]+out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/3).squeeze()
 
         depth_output = np.linspace(0, max_pres-1, len(test_profile_1.detach().numpy())) #* 5  #prima era [0,0,:]
         depth_variable = np.linspace(0, max_pres-1, len(test_profile_1.detach().numpy()))    #prima era [0,0,:]
 
-        if variable == "BBP700":
-            var = var / 1000
-            test_profile_1 = test_profile_1 / 1000
-
-        #test_ma_profile = test_profile_1
-        #var_ma = var
         if mov_average == True:
             test_profile_d = torch_moving_average_f(test_profile_d.view(1, 1, -1), 3)
             test_profile_2d = torch_moving_average_f(test_profile_2d.view(1, 1, -1), 3)
@@ -99,8 +103,7 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
             test_profile_1_2d= torch_moving_average_f(test_profile_1_2d.view(1, 1, -1), 3)
             out_2d_ma= torch_moving_average_f(out_2d[:,1:2,:].squeeze().view(1, 1, -1), 3)
             out_1p2d_ma = torch_moving_average_f(out_1p2d[:,0:1,:].squeeze().view(1, 1, -1), 3)
-            #var_ma = torch_moving_average_f(var[:,:,:,-1:,3:4].squeeze().view(1, 1, -1), 3)
-
+        
         fig, axs = plt.subplots(2, 3, figsize=(15, 12))
         axs[0, 0].plot(test_profile_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
         axs[0, 0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
@@ -155,11 +158,11 @@ def plot_profiles_f(ds, dir, variable, multiple_GPUs = False, ep=100, train=Fals
             dir_timestep = dir_profile + f"/day_{str(int(d))}" 
             if not os.path.exists(dir_timestep):
                 os.mkdir(path=dir_timestep)
-            plt.savefig(dir_timestep + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=800)
+            plt.savefig(dir_timestep + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=300)
             plt.close()
 
         else:
-            plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=800)
+            plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=300)
             plt.close()
 
 
@@ -170,11 +173,9 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
         os.mkdir(path=dir_profile)
     dir_info = dir + "/info.csv"
     info_df = pd.read_csv(dir_info)
-    max_pres = 200    #dict_max_pressure[variable]
-    interval = 1      #dict_interval[variable]
-    print("epoch", ep)
+    max_pres = 200    
+    interval = 1      
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
-    print("path conv mod", path_model_conv)
     model = UNet1D() #.to(device)   #AGGIUNTO ORA QUESTO
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
@@ -298,43 +299,53 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
 
 
 
-def linear_interpolation_comparison(ds, dir, variable, ep=100, mov_average=False, split_timesteps=False):
+def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_average=False, split_timesteps=False):
     dir_model = dir + "/model"
     dir_profile = dir + "/linear_interpolation_comparison"
     dir_single_comparison = dir + "/linear_interpolation_single_comparison"
-    if not os.path.exists(dir_profile):
-        os.mkdir(path=dir_profile)
-    if not os.path.exists(dir_single_comparison):
-        os.mkdir(path=dir_single_comparison)
+    os.makedirs(dir_profile, exist_ok=True)
+    os.makedirs(dir_single_comparison, exist_ok=True)
     for j in [1,2,4,5]:
         dir_single_comparison_j = dir_single_comparison + f"/prediction_{j}"
-        if not os.path.exists(dir_single_comparison_j):
-            os.mkdir(path=dir_single_comparison_j)
+        os.makedirs(dir_single_comparison_j, exist_ok=True)
     dir_info = dir + "/info.csv"
     info_df = pd.read_csv(dir_info)
-    max_pres = 200    #dict_max_pressure[variable]
-    interval = 1      #dict_interval[variable]
-    print("epoch", ep)
+    max_pres = 200    
+    interval = 1      
+
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
-    print("path conv mod", path_model_conv)
-    model = UNet1D() #.to(device)   #AGGIUNTO ORA QUESTO
+    models = {"mode_0D": UNet1D, "mode_1D": UNet_1D_mode} 
+    model = models[exp_mode]()
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
+    if exp_mode == "mode_1D":
+        path_model_mlp = dir_model + "/model_mlp_" + str(ep) + ".pt"
+        model_MLP = MLP_1D_mode()
+        model_MLP.load_state_dict(torch.load(path_model_mlp))
+        model_MLP.eval()
 
-    for sample in list(islice(ds, 150)):
+    for sample in list(islice(ds, 50)):
         var = sample[1]
-        testing_x_tmp = from_loader_data_to_train_data_f(sample)
-        testing_x_sx, testing_x_dx = testing_x_tmp  
-        out_d = model(testing_x_sx[:, [0,3], :])  
-        out_1pd = model(testing_x_dx[:, [0,3], :]) 
-        out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
-        out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
+        testing_x_tmp = from_loader_data_to_train_data_f(sample, exp_mode)
+        testing_x_sx = testing_x_tmp[0]
+        testing_x_dx = testing_x_tmp[1]
 
-        test_profile_d = out_d[:,0:1,:].squeeze()
-        test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
-        test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
-        test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
-        test_profile_1 = ((testing_x_sx[:,-1:,:]+out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/3).squeeze()
+        if exp_mode == "mode_0D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_0D(exp_mode, model, sample)
+
+        elif exp_mode == "mode_1D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_1D(exp_mode, model, model_MLP, sample)
+         
+        #out_d = model(testing_x_sx[:, [0,3], :])  
+        #out_1pd = model(testing_x_dx[:, [0,3], :]) 
+        #out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
+        #out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
+
+        #test_profile_d = out_d[:,0:1,:].squeeze()
+        #test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
+        #test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
+        #test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
+        #test_profile_1 = ((testing_x_sx[:,-1:,:]+out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/3).squeeze()
 
         out_1_linear = (2/3)*testing_x_sx[:, 0:1, :] + (1/3)*testing_x_sx[:, 3:, :]
         out_2_linear = (1/3)*testing_x_sx[:, 0:1, :] + (2/3)*testing_x_sx[:, 3:, :]

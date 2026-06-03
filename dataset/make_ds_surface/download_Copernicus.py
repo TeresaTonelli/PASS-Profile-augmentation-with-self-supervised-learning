@@ -19,21 +19,33 @@ sys.path.append("../../.")
 
 def csv_array_correction(dataset_csv):
     df = pd.read_csv(dataset_csv, header=None)
-    print("df shape", df.shape)
+    #print("df shape", df.shape)
     var_arrays = df.iloc[-1, :].to_list()
+    var_name = var_arrays[0]
+    print("var name", var_name)
     ##print("var_arrays", var_arrays)
-    print("var arrays len", len(var_arrays))
+    #print("var arrays len", len(var_arrays))
     #print("var arrays [1]", var_arrays[1])
+    #print("var arrays [1] first char", var_arrays[1][0])
+    #print("var arrays [1] first char", var_arrays[1][2])
+    assert type(var_arrays) == list
     assert type(var_arrays[10]) == str
-    #var_arrays = [v.replace("array([", "").replace("], dtype=float32)", "").replace("\n", "").split(",") for v in var_arrays[1:]]
-    var_arrays = var_arrays.replace("array([", "").replace("], dtype=float32)", "").replace("\n", "").split(",") 
-    print("var arrays", var_arrays)
+    var_arrays = [v.replace("array([", "").replace("], dtype=float32)", "").replace("\n", "").replace(" ", "") for v in var_arrays[1:]]  #.split(",") for v in var_arrays[1:]]
+    assert type(var_arrays) == list
+    #list_trial = var_arrays[0].split(",")
+    #print("list trial", list_trial)
+    #print("type var arrays 10", type(var_arrays[10]))
+    #print("len list", len(var_arrays[10]))
+    #print("single element list", var_arrays[10][0])
+    #print("single element list", var_arrays[10][1])
+    assert type(var_arrays[10]) == str
     print("var arrays len", len(var_arrays))
-    print("var arrays [0]", var_arrays[0])
-    var_arrays = [var_arrays[0]] + [v.replace("array([", "").replace("], dtype=float32)", "").replace("\n", "").split(",") for v in var_arrays[1:]]
+    print(len([v.split(",") for v in var_arrays]))
+    var_arrays = [var_name] + var_arrays #[v.split(",") for v in var_arrays]
     print("var arrays", var_arrays)
+    print("", len(var_arrays))
     df.iloc[-1, :] = var_arrays
-    #df.to_csv(dataset_csv)
+    df.to_csv(dataset_csv)
 
 
 def built_in_generate_datetime(year_intervals):
@@ -160,19 +172,19 @@ def pypeline_download_copernicus_dataset(dataset_csv, copernicus_data_directory,
     df_T.to_csv(os.path.join("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset", "CHLA", f"complete_{t}_mnt_surf.csv"))
 
 
-Copernicus_download = False
+Copernicus_download = True
 if Copernicus_download == True:
 
-    dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_test_mnt.csv"
+    dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_cp.csv"
     m = pd.read_csv(dataset_csv, header=None).shape[1]
     copernicus_data_directory = "cmems_obs-oc_med_bgc-plankton_my_l4-gapfree-multi-1km_P1D"
     var = "CHL"    
-    var_folder = "SSint_surface_chl"
+    var_folder = "SSint_surface_chl_train"
     pypeline_download_copernicus_dataset(dataset_csv, copernicus_data_directory, var, var_folder, 0, m-1)
 
 
 
-Csv_correction = True
+Csv_correction = False
 if Csv_correction == True:
-    dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_test_mnt_surf_cp.csv"
+    dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_cp.csv"
     csv_array_correction(dataset_csv)

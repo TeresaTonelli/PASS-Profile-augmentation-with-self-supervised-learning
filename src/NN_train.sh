@@ -8,10 +8,10 @@
 #SBATCH --mem=64G  
 #SBATCH --partition=boost_usr_prod
 
-#SBATCH --output=make_src_outputs/make_train_1Unet.%j
+#SBATCH --output=make_src_outputs/make_train_surf.%j
 
 #SBATCH --account=OGS23_PRACE_IT_0 
-#SBATCH --job-name=job_1Unet_make_train
+#SBATCH --job-name=job_surf_make_train
 
 #SBATCH --cpus-per-task=1
 
@@ -23,8 +23,9 @@ conda activate glob_io_env
 #/leonardo_work/IscrC_MEDConNN/SSint_env
 
 python NN_train.py \
-    --total_epochs 20 \
-    --save_every 10 \
-    --batch_size 1 \
-    --lr 0.001 \
-    --variable NITRATE \
+    --total_epochs 4 \
+    --save_every 2 \
+    --batch_size 9 \
+    --lr 0.0001 \
+    --variable CHLA \
+    --mode mode_2D \

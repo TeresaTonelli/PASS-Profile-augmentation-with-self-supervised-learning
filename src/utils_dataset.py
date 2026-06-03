@@ -316,26 +316,27 @@ class FloatDatasetFeat(Dataset):
         variable_surf_full, _ = from_string_to_tensor_f(self.samples[-1], "tensor")      
         variable_surf_list = []
         for j in range(n_times):
-            variable_s = torch.tensor([variable_surf_full[i] for i in range(7*7*7) if j*7*7 < i < (j*1)*7*7])
+            variable_s = torch.tensor([variable_surf_full[i] for i in range(7*7*7) if j*7*7 < i < (j+1)*7*7])
             variable_surf_list.append(variable_s)
 
         day_tensor = torch.stack([day.repeat(200) for day in day_rad_list_n])
         var_tensor = torch.stack(variable_list)
+
         try:
-            if self.mode == "mode_A":
+            if self.mode == "mode_0D":
                 variable_surf_list = [torch.mean(var_s) for var_s in variable_surf_list]
                 assert len(variable_surf_list) == 7
-                assert variable_surf_list[1].shape == torch.Size([1])
+                assert variable_surf_list[1].shape == torch.Size([])
                 var_surf_tensor = torch.stack(variable_surf_list)
                 var_tensor[:, 0] = var_surf_tensor
-                #Forse qua sarà da fare un qualche reshape
-            elif self.mode == "mode_B":
+            elif self.mode == "mode_1D":
                 variable_surf_list = [torch.mean(var_s) for var_s in variable_surf_list]
                 assert len(variable_surf_list) == 7
-                assert variable_surf_list[1].shape == torch.Size([1])
+                assert variable_surf_list[1].shape == torch.Size([])
                 var_surf_tensor = torch.stack(variable_surf_list)
+                assert var_surf_tensor.shape == torch.Size([7])
                 #Forse qua ci sarà da fare qualche reshape
-            elif self.mode == "mode_C":
+            elif self.mode == "mode_2D":
                 variable_list = [var_s.reshape(7,7) for var_s in variable_surf_list]
                 assert len(variable_surf_list) == 7
                 assert variable_surf_list[1].shape == torch.Size([7,7])
@@ -345,13 +346,11 @@ class FloatDatasetFeat(Dataset):
         except Exception as error:
             print(f"Mode {self.mode} is invalid")
 
-
-
         assert day_tensor.shape == var_tensor.shape == torch.Size([7, 200])
         
         input_tensor = var_tensor
 
-        if self.mode == "mode_A":
+        if self.mode == "mode_0D":
             return self.column_name, input_tensor, day_tensor
         else:
             return self.column_name, input_tensor, var_surf_tensor, day_tensor 
