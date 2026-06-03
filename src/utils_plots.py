@@ -58,16 +58,20 @@ def mean_ssim_plot(var_tensor, data_range, normalize=False):
 
 def from_loader_data_to_train_data_f(input_data, exp_mode):
     testing_x = input_data[1]
-    if exp_mode == "mode_1D":
-        testing_surf_x = input_data[2]
     n = testing_x.shape[1]
     l = n//2
-    ##Split between training sx and training dx
     testing_x_sx = testing_x[:, 0:l+1, :] 
     testing_x_dx = testing_x[:, l:n+1, :]
     assert (testing_x_sx[:, 3:, :] == testing_x_dx[:, 0:1, :]).all()
     if exp_mode == "mode_1D":
+        testing_surf_x = input_data[2]
         return testing_x_sx, testing_x_dx, testing_surf_x
+    elif exp_mode == "mode_2D":
+        testing_surf_x = input_data[2]
+        testing_surf_x_sx = testing_surf_x[:, 0:l+1, :, :] 
+        testing_surf_x_dx = testing_surf_x[:, l:n+1, :, :]
+        assert torch.equal(testing_surf_x_sx[:, 3, :, :], testing_surf_x_dx[:, 0, :, :])
+        return testing_x_sx, testing_x_dx, testing_surf_x_sx, testing_surf_x_dx
     else: 
         return testing_x_sx, testing_x_dx
 
@@ -111,17 +115,19 @@ def get_evaluation_model_1D(exp_mode, model, model_mlp, sample):
 
 
 
-def get_evaluation_model_2D(ds, dir, variable, ep=100, mov_average=False, split_timesteps=False):
-    var = sample[1]
-    testing_x_tmp = from_loader_data_to_train_data_f(sample)
-    testing_x_sx, testing_x_dx = testing_x_tmp  
-    out_d = model(testing_x_sx[:, [0,3], :])  
-    out_1pd = model(testing_x_dx[:, [0,3], :]) 
-    out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
-    out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
+def get_evaluation_model_2D(exp_mode, model, sample):
+    testing_x_tmp = from_loader_data_to_train_data_f(sample, exp_mode)
+    testing_x_sx, testing_x_dx, testing_surf_x_sx, testing_surf_x_dx = testing_x_tmp  
+
+    out_d = model(testing_surf_x_sx, testing_x_sx[:, [0,3], :])  
+    out_1pd = model(testing_surf_x_dx, testing_x_dx[:, [0,3], :]) 
+    out_2d = model(torch.cat((testing_surf_x_sx[:, 1:, :, :], testing_surf_x_dx[:, 1:2, :, :]), 1), torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
+    out_1p2d = model(torch.cat((testing_surf_x_sx[:, 2:3, :, :], testing_surf_x_dx[:, :3, :, :]), 1), torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
 
     test_profile_d = out_d[:,0:1,:].squeeze()
     test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
     test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
     test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
     test_profile_1 = ((testing_x_sx[:,-1:,:]+out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/3).squeeze()
+
+    return test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d

@@ -37,15 +37,20 @@ class TrainerFeat:
 
     def _data_train_preprocess_f(self, input_data, batch_size):
         training_x = input_data[1]
-        if args.mode == "mode_1D":
-            training_surf_x = input_data[2]
         n = training_x.shape[1]
         l = n//2
         training_x_sx = training_x[:, 0:l+1, :] 
         training_x_dx = training_x[:, l:n+1, :]
         assert (training_x_sx[:, 3, :] == training_x_dx[:, 0, :]).all()
         if args.mode == "mode_1D":
+            training_surf_x = input_data[2]
             return training_x_sx, training_x_dx, training_surf_x
+        elif args.mode == "mode_2D":
+            training_surf_x = input_data[2]
+            training_surf_x_sx = training_surf_x[:, 0:l+1, :, :] 
+            training_surf_x_dx = training_surf_x[:, l:n+1, :, :]
+            assert torch.equal(training_surf_x_sx[:, 3, :, :], training_surf_x_dx[:, 0, :, :])
+            return training_x_sx, training_x_dx, training_surf_x_sx, training_surf_x_dx
         else: 
             return training_x_sx, training_x_dx
 
@@ -55,6 +60,8 @@ class TrainerFeat:
             I_01, I_02 = list_sources
         elif args.mode == "mode_1D":
             I_01, I_02, input_surf = list_sources
+        elif args.mode == "mode_2D":
+            I_01, I_02, surf_01, surf_02 = list_sources
         assert (targets == I_01[:, -1:, :]).all()
         assert (targets == I_02[:, 0:1, :]).all() 
         if args.mode == "mode_0D":
@@ -68,6 +75,11 @@ class TrainerFeat:
             I_1pd = self.model_Conv1D(torch.cat((output_surf, I_02[:, [0,3], :]), 1))
             I_d2 = self.model_Conv1D(torch.cat((output_surf, I_d[:, 0:1, :], I_1pd[:, 0:1, :]), 1))    
             I_1pd2 = self.model_Conv1D(torch.cat((output_surf, I_d[:, 1:2, :], I_1pd[:, 1:2, :]), 1))
+        if args.mode == "mode_2D":
+            I_d = self.model_Conv1D(surf_01, I_01[:, [0,3], :])  
+            I_1pd = self.model_Conv1D(surf_02, I_02[:, [0,3], :])
+            I_d2 = self.model_Conv1D(torch.cat((surf_01[:, 1:, :, :], surf_02[:, 1:2, :, :]), 1), torch.cat((I_d[:, 0:1, :], I_1pd[:, 0:1, :]), 1))    
+            I_1pd2 = self.model_Conv1D(torch.cat((surf_01[:, 2:3, :, :], surf_02[:, :3, :, :]), 1), torch.cat((I_d[:, 1:2, :], I_1pd[:, 1:2, :]), 1))
         #loss_1 = torch.nn.functional.mse_loss(I_d2[:, :, :, -1:, 1:2], targets)  # + torch.nn.functional.mse_loss(I_1pd2[:, :, :, -1:, 0:1], targets)) / 2      
         loss_1 = (torch.nn.functional.mse_loss(I_d2[:, 1:2, :], targets) + torch.nn.functional.mse_loss(I_1pd2[:, 0:1, :], targets)) / 2      
         loss_1sd = torch.nn.functional.mse_loss(I_d2[:, 1:2, :], I_1pd2[:, 0:1, :])     
@@ -76,6 +88,8 @@ class TrainerFeat:
             loss_bound = torch.nn.functional.mse_loss(self.model_Conv1D(torch.cat((I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :]) + torch.nn.functional.mse_loss(self.model_Conv1D(torch.cat((I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :])
         elif args.mode == "mode_1D":
             loss_bound = torch.nn.functional.mse_loss(self.model_Conv1D(torch.cat((output_surf, I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :]) + torch.nn.functional.mse_loss(self.model_Conv1D(torch.cat((output_surf, I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :])
+        if args.mode == "mode_2D":
+            loss_bound = torch.nn.functional.mse_loss(self.model_Conv1D(surf_01[:, 0:1, :, :].repeat(1, 4, 1, 1), torch.cat((I_01[:, 0:1, :], I_01[:, 0:1, :]), 1)), I_01[:, 0:1, :]) + torch.nn.functional.mse_loss(self.model_Conv1D(surf_02[:, 0:1, :, :].repeat(1, 4, 1, 1), torch.cat((I_02[:, 0:1, :], I_02[:, 0:1, :]), 1)), I_02[:, 0:1, :])
         loss = 0.5 * loss_1 + 0.00 * loss_1sd + 0.45 * loss_2 + 0.1 * loss_bound     #+ 0.025 * loss_reg + 0.025 * loss_reg_2
         print("loss", loss)
         loss_over_GPUs = loss.detach().clone()
@@ -93,6 +107,9 @@ class TrainerFeat:
             elif args.mode == "mode_1D":
                 source_sx, source_dx, source_surf = self._data_train_preprocess_f(data, batch_size)
                 list_sources = [source_sx.to(self.device), source_dx.to(self.device), source_surf.to(self.device)]
+            elif args.mode == "mode_2D":
+                source_sx, source_dx, source_surf_sx, source_surf_dx = self._data_train_preprocess_f(data, batch_size)
+                list_sources = [source_sx.to(self.device), source_dx.to(self.device), source_surf_sx.to(self.device), source_surf_dx.to(self.device)]
             #n = len(data[-1]).  #questo era quello evcchio, prima di cambiare il dataloader per includere il batch size
             n = data[1].shape[1]
             l = n//2
@@ -161,12 +178,6 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
     trainer.train_f(total_epochs, save_dir, batch_size, save_every, my_lr)
     train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
     plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
-
-    #plot_profiles_f(prepare_dataloader_f(dataset, batch_size=1),
-    #            variable=my_variable,
-    #            dir=save_dir,
-    #            multiple_GPUs=False, 
-    #            ep=my_epochs, train=True, mov_average=False)
     
 
     val_dataset = FloatDatasetFeat(args.mode, path_ds_test, save_dir + "/normalization_stats.json") 

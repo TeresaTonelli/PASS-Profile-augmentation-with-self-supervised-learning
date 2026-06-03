@@ -127,3 +127,174 @@ class MLP_1D_mode(nn.Module):
         return self.net(x).unsqueeze(1)
 
     
+
+
+class UNet_2D_mode(nn.Module):
+    def __init__(self, depth_dim=200):
+        super().__init__()
+
+        self.depth_dim = depth_dim
+
+        # =====================================================
+        # Spatial encoder
+        # Input: [B, 4, 7, 7]
+        # =====================================================
+
+        self.spatial_encoder = nn.Sequential(
+            nn.Conv2d(4, 32, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+
+            nn.AdaptiveAvgPool2d(1)
+        )
+
+        self.spatial_fc = nn.Sequential(
+            nn.Linear(64, 128),
+            nn.ReLU(inplace=True)
+        )
+
+        # =====================================================
+        # Profile encoder
+        # Input: [B, 2, 200]
+        # =====================================================
+
+        self.profile_encoder = nn.Sequential(
+            nn.Conv1d(2, 32, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+
+            nn.Conv1d(32, 64, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+
+            nn.AdaptiveAvgPool1d(1)
+        )
+
+        self.profile_fc = nn.Sequential(
+            nn.Linear(64, 128),
+            nn.ReLU(inplace=True)
+        )
+
+        # =====================================================
+        # Fusion
+        # =====================================================
+
+        self.fusion = nn.Sequential(
+            nn.Linear(256, 256),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(256, 256),
+            nn.ReLU(inplace=True)
+        )
+
+        # =====================================================
+        # Decoder
+        # =====================================================
+
+        self.decoder_fc = nn.Linear(
+            256,
+            depth_dim * 64
+        )
+
+        self.decoder_conv = nn.Sequential(
+            nn.Conv1d(64, 64, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+
+            nn.Conv1d(64, 32, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+
+            nn.Conv1d(32, 2, kernel_size=1)
+        )
+
+    def build_interpolation_baseline(self, profiles):
+        """
+        profiles: [B, 2, D]
+
+        profiles[:,0] = point 1
+        profiles[:,1] = point 4
+
+        returns:
+        baseline: [B, 2, D]
+            baseline[:,0] = point 2 estimate
+            baseline[:,1] = point 3 estimate
+        """
+
+        p1 = profiles[:, 0]
+        p4 = profiles[:, 1]
+
+        p2_base = (2.0 / 3.0) * p1 + (1.0 / 3.0) * p4
+        p3_base = (1.0 / 3.0) * p1 + (2.0 / 3.0) * p4
+
+        baseline = torch.stack(
+            [p2_base, p3_base],
+            dim=1
+        )
+
+        return baseline
+
+    def forward(self, surface, known_profiles):
+        """
+        surface:
+            [B, 4, 7, 7]
+
+        known_profiles:
+            [B, 2, 200]
+
+        returns:
+            [B, 2, 200]
+        """
+
+        B = surface.shape[0]
+
+        # ==========================================
+        # Spatial branch
+        # ==========================================
+
+        spatial_feat = self.spatial_encoder(surface)
+        spatial_feat = spatial_feat.view(B, -1)
+        spatial_feat = self.spatial_fc(spatial_feat)
+
+        # ==========================================
+        # Profile branch
+        # ==========================================
+
+        profile_feat = self.profile_encoder(known_profiles)
+        profile_feat = profile_feat.squeeze(-1)
+        profile_feat = self.profile_fc(profile_feat)
+
+        # ==========================================
+        # Fusion
+        # ==========================================
+
+        latent = torch.cat(
+            [spatial_feat, profile_feat],
+            dim=1
+        )
+
+        latent = self.fusion(latent)
+
+        # ==========================================
+        # Decoder
+        # ==========================================
+
+        x = self.decoder_fc(latent)
+
+        x = x.view(
+            B,
+            64,
+            self.depth_dim
+        )
+
+        residual = self.decoder_conv(x)
+
+        # ==========================================
+        # Baseline interpolation
+        # ==========================================
+
+        baseline = self.build_interpolation_baseline(
+            known_profiles
+        )
+
+        prediction = baseline + residual
+
+        return prediction
