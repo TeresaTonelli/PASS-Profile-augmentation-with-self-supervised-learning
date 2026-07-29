@@ -175,25 +175,37 @@ def main_f(save_every: int, total_epochs: int, batch_size: int, path_ds_train: s
     dataset, model, model_MLP, optimizer = load_train_objs_f(path_ds_train, save_dir, my_lr)
     train_data = prepare_dataloader_f(dataset, batch_size)
     trainer = TrainerFeat(model, model_MLP, train_data, optimizer, device, save_every, alpha_smooth_reg)
-    trainer.train_f(total_epochs, save_dir, batch_size, save_every, my_lr)
-    train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
-    plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
+    #trainer.train_f(total_epochs, save_dir, batch_size, save_every, my_lr)
+    #train_losses = read_losses_median_f(save_dir + "/loss_file.txt")
+    #plot_loss_f(train_losses, total_epochs, 1, save_dir + "/losses_plot") 
     
 
     val_dataset = FloatDatasetFeat(args.mode, path_ds_test, save_dir + "/normalization_stats.json") 
     print("path ds test", path_ds_test)
-    plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
-                variable=my_variable,
+    #plot_profiles_f(prepare_dataloader_f(val_dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            exp_mode=args.mode,
+    #            multiple_GPUs=False, 
+    #            ep=my_epochs, train=False, mov_average=False)
+
+    #linear_interpolation_comparison(prepare_dataloader_f(dataset, batch_size=1),
+    #            variable=my_variable,
+    #            dir=save_dir,
+    #            exp_mode=args.mode, 
+    #            ep=my_epochs, mov_average=False)
+
+    RMSE_comparison(prepare_dataloader_f(val_dataset, batch_size=1),
                 dir=save_dir,
                 exp_mode=args.mode,
-                multiple_GPUs=False, 
-                ep=my_epochs, train=False, mov_average=False)
-
-    linear_interpolation_comparison(prepare_dataloader_f(dataset, batch_size=1),
                 variable=my_variable,
-                dir=save_dir,
-                exp_mode=args.mode, 
                 ep=my_epochs, mov_average=False)
+    
+    RMSE_float_linear(prepare_dataloader_f(val_dataset, batch_size=1),
+                dir=save_dir,
+                exp_mode = args.mode, 
+                variable=my_variable,
+                mov_average=False)
     
     
 
@@ -215,14 +227,15 @@ if __name__ == "__main__":
     #path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt.csv"
     path_ds_train = f"../dataset/{args.variable}/toy_ds_sf_train_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt_surf.csv"
     path_ds_test = f"../dataset/{args.variable}/toy_ds_sf_test_mnt.csv" if args.flag_toy else f"../dataset/{args.variable}/complete_test_mnt_surf.csv"
-    save_dir = create_directories_f([f"results_trial_surface_{args.mode[-2:]}", args.variable], date.today())
-    save_ds_info_f(variable=args.variable,
-                 flag_toy=args.flag_toy,
-                 batch_size=args.batch_size,
-                 epochs=args.total_epochs,
-                 lr=args.lr,
-                 save_dir=save_dir,
-                 alpha_smooth_reg=args.alpha_smooth_reg)
+    #save_dir = create_directories_f([f"results_trial_surface_{args.mode[-2:]}", args.variable], date.today())
+    save_dir = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/src/results_trial_surface_2D/CHLA/2026-06-03_4"
+    #save_ds_info_f(variable=args.variable,
+    #             flag_toy=args.flag_toy,
+    #             batch_size=args.batch_size,
+    #             epochs=args.total_epochs,
+    #             lr=args.lr,
+    #             save_dir=save_dir,
+    #             alpha_smooth_reg=args.alpha_smooth_reg)
     start_time = time.time()
     main_f(args.save_every, args.total_epochs, args.batch_size, path_ds_train, path_ds_test, save_dir, args.lr, args.alpha_smooth_reg, args.variable, args.total_epochs)
     end_time = time.time()

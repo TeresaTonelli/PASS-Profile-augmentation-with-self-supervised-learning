@@ -5,11 +5,13 @@ import pandas as pd
 from itertools import islice
 import matplotlib.pyplot as plt
 
-from NN_architecture import UNet1D
-from utils_plots import from_loader_data_to_train_data_f
+from NN_architecture import UNet1D, UNet_1D_mode, UNet_2D_mode, MLP_1D_mode
+from utils_plots import from_loader_data_to_train_data_f, get_evaluation_model_0D, get_evaluation_model_1D, get_evaluation_model_2D
 
 
-def RMSE_comparison(ds, dir, variable, ep=100, mov_average=False, m=50):
+
+
+def RMSE_comparison(ds, dir, exp_mode, variable, ep=100, mov_average=False):
     dir_model = dir + "/model"
     dir_RMSE = dir + "/error_evaluation"
     if not os.path.exists(dir_RMSE):
@@ -17,25 +19,27 @@ def RMSE_comparison(ds, dir, variable, ep=100, mov_average=False, m=50):
     dir_info = dir + "/info.csv"
     info_df = pd.read_csv(dir_info)     
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
-    model = UNet1D()    #.to(device)   #AGGIUNTO ORA QUESTO
+    models = {"mode_0D": UNet1D, "mode_1D": UNet_1D_mode, "mode_2D": UNet_2D_mode} 
+    model = models[exp_mode]()
     model.load_state_dict(torch.load(path_model_conv))
     model.eval()
+    if exp_mode == "mode_1D":
+        path_model_mlp = dir_model + "/model_mlp_" + str(ep) + ".pt"
+        model_MLP = MLP_1D_mode()
+        model_MLP.load_state_dict(torch.load(path_model_mlp))
+        model_MLP.eval()
 
     RMSEs = torch.zeros([1, 5])
 
-    for sample in list(islice(ds, m)):
+    for sample in list(islice(ds, len(ds))):
         var = sample[1]
-        testing_x_tmp = from_loader_data_to_train_data_f(sample)
-        testing_x_sx, testing_x_dx = testing_x_tmp  
-        out_d = model(testing_x_sx[:, [0,3], :])  
-        out_1pd = model(testing_x_dx[:, [0,3], :]) 
-        out_2d = model(torch.cat((out_d[:, 0:1, :], out_1pd[:, 0:1, :]), 1))
-        out_1p2d = model(torch.cat((out_d[:, 1:2, :], out_1pd[:, 1:2, :]), 1))
-        test_profile_d = out_d[:,0:1,:].squeeze()
-        test_profile_1_2d = out_1pd[:,1:2,:].squeeze()
-        test_profile_2d = ((out_d[:,1:2,:] + out_2d[:,0:1,:])/2).squeeze()
-        test_profile_1_d = ((out_1pd[:,0:1,:] + out_1p2d[:,1:2,:])/2).squeeze()
-        test_profile_1 = ((out_2d[:,1:2,:]+out_1p2d[:,0:1,:])/2).squeeze()
+
+        if exp_mode == "mode_0D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_0D(exp_mode, model, sample)
+        elif exp_mode == "mode_1D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_0D(exp_mode, model, model_MLP, sample)
+        elif exp_mode == "mode_2D":
+            test_profile_d, test_profile_2d, test_profile_1, test_profile_1_d, test_profile_1_2d, out_2d, out_1p2d = get_evaluation_model_2D(exp_mode, model, sample)
 
         rmse_sample = torch.unsqueeze(torch.tensor([torch.sqrt(torch.nn.functional.mse_loss(var[:, 1:2, :], test_profile_d)),  torch.sqrt(torch.nn.functional.mse_loss(var[:, 2:3, :], test_profile_2d)),
                                     torch.sqrt(torch.nn.functional.mse_loss(var[:, 3:4, :], test_profile_1)), torch.sqrt(torch.nn.functional.mse_loss(var[:, 4:5, :], test_profile_1_d)), 
@@ -46,7 +50,7 @@ def RMSE_comparison(ds, dir, variable, ep=100, mov_average=False, m=50):
             f.write(str([rmse_sample[:, i].item() for i in range(rmse_sample.shape[1])]) + '\n')
         
 
-    assert RMSEs.shape[0] == m+1
+    assert RMSEs.shape[0] == len(ds)+1
     RMSEs = RMSEs[1:, :]
 
     with open(dir_RMSE + "/RMSE_file.txt", 'a') as f:
@@ -56,7 +60,7 @@ def RMSE_comparison(ds, dir, variable, ep=100, mov_average=False, m=50):
     return None
 
 
-def RMSE_float_linear(ds, dir, variable, mov_average=False, m=50): 
+def RMSE_float_linear(ds, dir, exp_mode, variable, mov_average=False): 
     dir_model = dir + "/model"
     dir_RMSE = dir + "/error_evaluation"
     if not os.path.exists(dir_RMSE):
@@ -66,10 +70,11 @@ def RMSE_float_linear(ds, dir, variable, mov_average=False, m=50):
 
     RMSEs = torch.zeros([1, 4])
 
-    for sample in list(islice(ds, m)):
+    for sample in list(islice(ds, len(ds))):
         var = sample[1]
-        testing_x_tmp = from_loader_data_to_train_data_f(sample)
-        testing_x_sx, testing_x_dx = testing_x_tmp  
+        testing_x_tmp = from_loader_data_to_train_data_f(sample, exp_mode)
+        testing_x_sx = testing_x_tmp[0]
+        testing_x_dx = testing_x_tmp[1]
 
         out_1_linear = (2/3)*testing_x_sx[:, 0:1, :] + (1/3)*testing_x_sx[:, 3:, :]
         out_2_linear = (1/3)*testing_x_sx[:, 0:1, :] + (2/3)*testing_x_sx[:, 3:, :]
@@ -83,7 +88,7 @@ def RMSE_float_linear(ds, dir, variable, mov_average=False, m=50):
         with open(dir_RMSE + "/RMSE_float_linear_file.txt", 'a') as f: 
             f.write(str([rmse_sample[:, i].item() for i in range(rmse_sample.shape[1])]) + '\n')
 
-    assert RMSEs.shape[0] == m+1
+    assert RMSEs.shape[0] == len(ds)+1
     RMSEs = RMSEs[1:, :]
 
     with open(dir_RMSE + "/RMSE_float_linear_file.txt", 'a') as f:
@@ -104,7 +109,7 @@ def error_evaluation_boxplots(RMSE_txt, RMSE_linear_txt, save_dir):
     with open(RMSE_linear_txt, 'r') as f:
         list_rmse_linear_samples = f.readlines()
         list_rmse_linear_samples = [[float(x.strip()) for x in rmse_sample.strip().strip("[]").split(",")]for rmse_sample in list_rmse_linear_samples[:-2]]
-        assert len(list_rmse_linear_samples) == 50
+        assert len(list_rmse_linear_samples) == 337
     rmse_linear_samples_1 = [rmse_linear_sample[0] for rmse_linear_sample in list_rmse_linear_samples]
     rmse_linear_samples_2 = [rmse_linear_sample[1] for rmse_linear_sample in list_rmse_linear_samples]
     rmse_linear_samples_4 = [rmse_linear_sample[2] for rmse_linear_sample in list_rmse_linear_samples]

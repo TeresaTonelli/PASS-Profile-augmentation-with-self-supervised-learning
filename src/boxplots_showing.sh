@@ -5,12 +5,12 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 
-#SBATCH --mem=64G  
-#SBATCH --partition=boost_usr_prod
+#SBATCH --mem=6G  
+#SBATCH --partition=dcgp_usr_prod
 
 #SBATCH --output=make_src_outputs/boxplots_RMSE_1Unet.%j
 
-#SBATCH --account=IscrC_MEDConNN 
+#SBATCH --account=OGS23_PRACE_IT_1
 #SBATCH --job-name=job_1Unet_boxplots
 
 #SBATCH --cpus-per-task=1
