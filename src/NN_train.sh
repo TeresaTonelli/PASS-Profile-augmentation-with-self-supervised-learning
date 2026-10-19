@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=00:03:00
+#SBATCH --time=00:25:00
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -10,7 +10,7 @@
 
 #SBATCH --output=make_src_outputs/make_train_surf.%j
 
-#SBATCH --account=OGS23_PRACE_IT_0 
+#SBATCH --account=OGS23_PRACE_IT_0
 #SBATCH --job-name=job_surf_make_train
 
 #SBATCH --cpus-per-task=1
@@ -19,7 +19,7 @@
 
 
 eval "$(/leonardo/home/userexternal/ttonelli/miniconda3/bin/conda shell.bash hook)"
-conda activate glob_io_env
+conda activate glob_io_plot_env
 #/leonardo_work/IscrC_MEDConNN/SSint_env
 
 python NN_train.py \

@@ -169,22 +169,35 @@ def pypeline_download_copernicus_dataset(dataset_csv, copernicus_data_directory,
     df_T = df.T
     df_T.columns = [f"sample_{i}" for i in range(df_T.shape[1])]
     t = "train" if "train" in str(dataset_csv) else "test"  
-    df_T.to_csv(os.path.join("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset", "CHLA", f"complete_{t}_mnt_surf.csv"))
+    df_T.to_csv(os.path.join("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset", "CHLA", f"complete_{t}_mnt_surf_{index_end}.csv"))
 
 
-Copernicus_download = True
+Copernicus_download = False
 if Copernicus_download == True:
 
     dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_cp.csv"
     m = pd.read_csv(dataset_csv, header=None).shape[1]
     copernicus_data_directory = "cmems_obs-oc_med_bgc-plankton_my_l4-gapfree-multi-1km_P1D"
     var = "CHL"    
-    var_folder = "SSint_surface_chl_train"
+    var_folder = f"SSint_surface_chl_train_{m}"
     pypeline_download_copernicus_dataset(dataset_csv, copernicus_data_directory, var, var_folder, 0, m-1)
 
 
 
 Csv_correction = False
 if Csv_correction == True:
-    dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_cp.csv"
+    dataset_csv = "/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_2267.csv"
     csv_array_correction(dataset_csv)
+
+
+train_merging = False
+if train_merging == True:
+    df1 = pd.read_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_100_cp.csv")
+    df2 = pd.read_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_200_cp.csv")
+    df3 = pd.read_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_700_cp.csv")
+    df4 = pd.read_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_1200_cp.csv")
+    df5 = pd.read_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_1700_cp.csv")
+    df6 = pd.read_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_2267_cp.csv")
+    df_m = pd.concat([df1, df2, df3, df4, df5, df6], axis=1)
+    df_m.columns = [f"sample_{j}" for j in range(2267)]
+    df_m.to_csv("/leonardo_work/OGS23_PRACE_IT_0/ttonelli/SSint_profiles/dataset/CHLA/complete_train_mnt_surf_merged_cp.csv")

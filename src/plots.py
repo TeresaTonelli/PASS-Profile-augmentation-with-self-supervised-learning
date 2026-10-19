@@ -7,6 +7,8 @@ import torch
 import torch.nn.functional as F
 from itertools import islice
 
+import seaborn as sns
+
 from NN_architecture import UNet1D, MLP_1D_mode, UNet_1D_mode, UNet_2D_mode
 from utils_plots import from_loader_data_to_train_data_f, ssim_plot, mean_ssim_plot, get_evaluation_model_0D, get_evaluation_model_1D, get_evaluation_model_2D
 
@@ -40,10 +42,10 @@ def torch_moving_average_f(x, window_size):
     return output_ma.squeeze()
 
 
-def plot_profiles_f(ds, dir, variable, exp_mode, multiple_GPUs = False, ep=100, train=False, mov_average=False, split_timesteps=False):
+def plot_profiles_f(ds, dir, variable, exp_mode, multiple_GPUs = False, ep=100, train=False, mov_average=False, split_timesteps=False, paper_mode=False):
     dir_model = dir + "/model"
     if train == False:
-        dir_profile = dir + "/profile_test"
+        dir_profile = dir + "/profile_test_paper" if paper_mode == True else dir + "/profile_test"
         if not os.path.exists(dir_profile):
             os.mkdir(path=dir_profile)
     else:
@@ -60,16 +62,16 @@ def plot_profiles_f(ds, dir, variable, exp_mode, multiple_GPUs = False, ep=100, 
 
     models = {"mode_0D": UNet1D, "mode_1D": UNet_1D_mode, "mode_2D": UNet_2D_mode} 
     model = models[exp_mode]()
-    model.load_state_dict(torch.load(path_model_conv))
+    model.load_state_dict(torch.load(path_model_conv, map_location=device))
     model.eval()
     if exp_mode == "mode_1D":
         path_model_mlp = dir_model + "/model_mlp_" + str(ep) + ".pt"
         model_MLP = MLP_1D_mode()
-        model_MLP.load_state_dict(torch.load(path_model_mlp))
+        model_MLP.load_state_dict(torch.load(path_model_mlp, map_location=device))
         model_MLP.eval()
 
 
-    for sample in list(islice(ds, 10)):
+    for sample in list(islice(ds, 200)):
         var = sample[1]
 
         if exp_mode == "mode_0D":
@@ -92,53 +94,99 @@ def plot_profiles_f(ds, dir, variable, exp_mode, multiple_GPUs = False, ep=100, 
             test_profile_1_2d= torch_moving_average_f(test_profile_1_2d.view(1, 1, -1), 3)
             out_2d_ma= torch_moving_average_f(out_2d[:,1:2,:].squeeze().view(1, 1, -1), 3)
             out_1p2d_ma = torch_moving_average_f(out_1p2d[:,0:1,:].squeeze().view(1, 1, -1), 3)
-        
-        fig, axs = plt.subplots(2, 3, figsize=(15, 12))
-        axs[0, 0].plot(test_profile_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[0, 0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
-        axs[0, 0].invert_yaxis()
-        axs[0, 0].legend(loc="lower left")
-        axs[0, 0].set_title(r"$x_{i+{\frac{\delta t}{3}}}$", fontsize=16)
-        axs[0, 0].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
-        axs[0, 0].set_ylabel(r"depth [$m$]")
-        axs[0, 1].plot(test_profile_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable} ")
-        axs[0, 1].plot(var[:,2:3,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
-        axs[0, 1].invert_yaxis()
-        axs[0, 1].legend(loc="lower left")
-        axs[0, 1].set_title(r"$x_{i+{\frac{2\delta t}{3}}}$", fontsize=16)
-        axs[0, 1].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
-        axs[0, 1].set_ylabel(r"depth [$m$]")
-        axs[0, 2].plot(test_profile_1.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[0, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
-        axs[0, 2].invert_yaxis()
-        axs[0, 2].legend(loc="lower left")
-        axs[0, 2].set_title(r"$x_{i+{\delta t}}$", fontsize=16)
-        axs[0, 2].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
-        axs[0, 2].set_ylabel(r"depth [$m$]")
-        axs[1, 0].plot(test_profile_1_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[1, 0].plot(var[:,4:5,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
-        axs[1, 0].invert_yaxis()
-        axs[1, 0].legend(loc="lower left")
-        axs[1, 0].set_title(r"$x_{i+{\frac{4 \delta t}{3}}}$", fontsize=16)
-        axs[1, 0].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
-        axs[1, 0].set_ylabel(r"depth [$m$]")
-        axs[1, 1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
-        axs[1, 1].plot(var[:,5:6,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
-        axs[1, 1].invert_yaxis()
-        axs[1, 1].legend(loc="lower left")
-        axs[1, 1].set_title(r"$x_{i+{\frac{5 \delta t}{3}}}$", fontsize=16)
-        axs[1, 1].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
-        axs[1, 1].set_ylabel(r"depth [$m$]")
-        axs[1, 2].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, color='green', label=f"generated tc1 {variable}")
-        axs[1, 2].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated tc2 {variable}")
-        axs[1, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
-        axs[1, 2].invert_yaxis()
-        axs[1, 2].legend(loc="lower left")
-        axs[1, 2].set_title(r"$x_{i+{\delta t}}$" ": dual cycle", fontsize=16)
-        axs[1, 2].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
-        axs[1, 2].set_ylabel(r"depth [$m$]")
 
-        #plt.legend()
+        if paper_mode == False:
+            fig, axs = plt.subplots(2, 3, figsize=(15, 12))
+            axs[0, 0].plot(test_profile_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
+            axs[0, 0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
+            axs[0, 0].invert_yaxis()
+            axs[0, 0].legend(loc="lower left")
+            axs[0, 0].set_title(r"$x_{i+{\frac{\delta t}{3}}}$", fontsize=16)
+            axs[0, 0].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+            axs[0, 0].set_ylabel(r"depth [$m$]")
+            axs[0, 1].plot(test_profile_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable} ")
+            axs[0, 1].plot(var[:,2:3,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
+            axs[0, 1].invert_yaxis()
+            axs[0, 1].legend(loc="lower left")
+            axs[0, 1].set_title(r"$x_{i+{\frac{2\delta t}{3}}}$", fontsize=16)
+            axs[0, 1].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+            axs[0, 1].set_ylabel(r"depth [$m$]")
+            axs[0, 2].plot(test_profile_1.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
+            axs[0, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
+            axs[0, 2].invert_yaxis()
+            axs[0, 2].legend(loc="lower left")
+            axs[0, 2].set_title(r"$x_{i+{\delta t}}$", fontsize=16)
+            axs[0, 2].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+            axs[0, 2].set_ylabel(r"depth [$m$]")
+            axs[1, 0].plot(test_profile_1_d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
+            axs[1, 0].plot(var[:,4:5,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
+            axs[1, 0].invert_yaxis()
+            axs[1, 0].legend(loc="lower left")
+            axs[1, 0].set_title(r"$x_{i+{\frac{4 \delta t}{3}}}$", fontsize=16)
+            axs[1, 0].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+            axs[1, 0].set_ylabel(r"depth [$m$]")
+            axs[1, 1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='blue', label=f"generated {variable}")
+            axs[1, 1].plot(var[:,5:6,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
+            axs[1, 1].invert_yaxis()
+            axs[1, 1].legend(loc="lower left")
+            axs[1, 1].set_title(r"$x_{i+{\frac{5 \delta t}{3}}}$", fontsize=16)
+            axs[1, 1].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+            axs[1, 1].set_ylabel(r"depth [$m$]")
+            axs[1, 2].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, color='green', label=f"generated tc1 {variable}")
+            axs[1, 2].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, color='orange', label=f"generated tc2 {variable}")
+            axs[1, 2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, color='red', label=f"measured {variable}")
+            axs[1, 2].invert_yaxis()
+            axs[1, 2].legend(loc="lower left")
+            axs[1, 2].set_title(r"$x_{i+{\delta t}}$" ": dual cycle", fontsize=16)
+            axs[1, 2].set_xlabel(f"{variable}" r"[$mmol \ m^{-3}$]")
+            axs[1, 2].set_ylabel(r"depth [$m$]")
+
+        elif paper_mode == True:
+            sns.set_theme(context='paper', style='whitegrid', font='sans-serif', font_scale=2.5, color_codes=True, rc=None)
+            fig, axs = plt.subplots(1, 6, figsize=(45, 10))
+            axs[0].plot(test_profile_d.detach().numpy(), depth_output, linewidth=3.5, color='blue', label=f"generated {variable}")
+            axs[0].plot(var[:,1:2,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, color='red', label=f"measured {variable}")
+            axs[0].invert_yaxis()
+            #axs[0].legend(loc="lower left")
+            axs[0].set_title(r"$x_{t_0+{\frac{\delta t}{3}}}$", fontsize=36)
+            axs[0].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            axs[0].set_ylabel(r"depth [$m$]")
+            axs[1].plot(test_profile_2d.detach().numpy(), depth_output, linewidth=3.5, color='blue', label=f"generated {variable} ")
+            axs[1].plot(var[:,2:3,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, color='red', label=f"measured {variable}")
+            axs[1].invert_yaxis()
+            #axs[1].legend(loc="lower left")
+            axs[1].set_title(r"$x_{t_0+{\frac{2\delta t}{3}}}$", fontsize=36)
+            axs[1].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            #axs[1].set_ylabel(r"depth [$m$]")
+            axs[2].plot(test_profile_1.detach().numpy(), depth_output, linewidth=3.5, color='blue', label=f"generated {variable}")
+            axs[2].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, color='red', label=f"measured {variable}")
+            axs[2].invert_yaxis()
+            #axs[2].legend(loc="lower left")
+            axs[2].set_title(r"$x_{t_0+{\delta t}}$", fontsize=36)
+            axs[2].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            #axs[2].set_ylabel(r"depth [$m$]")
+            axs[3].plot(test_profile_1_d.detach().numpy(), depth_output, linewidth=3.5, color='blue', label=f"generated {variable}")
+            axs[3].plot(var[:,4:5,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, color='red', label=f"measured {variable}")
+            axs[3].invert_yaxis()
+            #axs[3].legend(loc="lower left")
+            axs[3].set_title(r"$x_{t_0+{\frac{4 \delta t}{3}}}$", fontsize=36)
+            axs[3].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            #axs[3].set_ylabel(r"depth [$m$]")
+            axs[4].plot(test_profile_1_2d.detach().numpy(), depth_output, linewidth=3.5, color='blue', label=f"generated {variable}")
+            axs[4].plot(var[:,5:6,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, color='red', label=f"measured {variable}")
+            axs[4].invert_yaxis()
+            #axs[4].legend(loc="lower left")
+            axs[4].set_title(r"$x_{t_0+{\frac{5 \delta t}{3}}}$", fontsize=36)
+            axs[4].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            #axs[4].set_ylabel(r"depth [$m$]")
+            axs[5].plot(out_2d[:,1:2,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, linestyle='--', color='green', label=f"generated tc1 {variable}")
+            axs[5].plot(out_1p2d[:,0:1,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, linestyle='--', color='orange', label=f"generated tc2 {variable}")
+            axs[5].plot(var[:,3:4,:].squeeze().detach().numpy(), depth_output, linewidth=3.5, color='red', label=f"measured {variable}")
+            axs[5].invert_yaxis()
+            #axs[5].legend(loc="lower left")
+            axs[5].set_title(r"$x_{t_0+{\delta t}}$" ": dual cycle", fontsize=30)
+            axs[5].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            #axs[5].set_ylabel(r"depth [$m$]")
 
         if split_timesteps == True:
             days = sample[2][0, :, 0].squeeze() 
@@ -147,11 +195,11 @@ def plot_profiles_f(ds, dir, variable, exp_mode, multiple_GPUs = False, ep=100, 
             dir_timestep = dir_profile + f"/day_{str(int(d))}" 
             if not os.path.exists(dir_timestep):
                 os.mkdir(path=dir_timestep)
-            plt.savefig(dir_timestep + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=300)
+            plt.savefig(dir_timestep + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=600)
             plt.close()
 
         else:
-            plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=300)
+            plt.savefig(dir_profile + f"/profile_{var[:,0:1, 0:1].item()}.png", dpi=600)
             plt.close()
 
 
@@ -288,10 +336,10 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
 
 
 
-def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_average=False, split_timesteps=False):
+def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_average=False, split_timesteps=False, paper_mode=False):
     dir_model = dir + "/model"
-    dir_profile = dir + "/linear_interpolation_comparison"
-    dir_single_comparison = dir + "/linear_interpolation_single_comparison"
+    dir_profile = dir + "/linear_interpolation_comparison" if paper_mode == False else dir + "/linear_interpolation_comparison_paper"
+    dir_single_comparison = dir + "/linear_interpolation_single_comparison" if paper_mode == False else dir + "/linear_interpolation_single_comparison_paper"
     os.makedirs(dir_profile, exist_ok=True)
     os.makedirs(dir_single_comparison, exist_ok=True)
     for j in [1,2,4,5]:
@@ -305,15 +353,15 @@ def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_ave
     path_model_conv = dir_model + "/model_" + str(ep) + ".pt"
     models = {"mode_0D": UNet1D, "mode_1D": UNet_1D_mode, "mode_2D":UNet_2D_mode} 
     model = models[exp_mode]()
-    model.load_state_dict(torch.load(path_model_conv))
+    model.load_state_dict(torch.load(path_model_conv, map_location=device))
     model.eval()
     if exp_mode == "mode_1D":
         path_model_mlp = dir_model + "/model_mlp_" + str(ep) + ".pt"
         model_MLP = MLP_1D_mode()
-        model_MLP.load_state_dict(torch.load(path_model_mlp))
+        model_MLP.load_state_dict(torch.load(path_model_mlp, map_location=device))
         model_MLP.eval()
 
-    for sample in list(islice(ds, 50)):
+    for sample in list(islice(ds, 200)):
         var = sample[1]
         testing_x_tmp = from_loader_data_to_train_data_f(sample, exp_mode)
         testing_x_sx = testing_x_tmp[0]
@@ -362,25 +410,50 @@ def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_ave
             out_2d_ma= torch_moving_average_f(out_2d[:,1:2,:].squeeze().view(1, 1, -1), 3)
             out_1p2d_ma = torch_moving_average_f(out_1p2d[:,0:1,:].squeeze().view(1, 1, -1), 3)
 
-        fig, axs = plt.subplots(1, 2, figsize=(14, 10))
-        axs[0].plot(testing_x_sx[:, 0:1, :].squeeze().detach().numpy(), depth_output, color='lightsteelblue', label=f"step 0")
-        axs[0].plot(test_profile_d.detach().numpy(), depth_output, color='cornflowerblue', label=f"step 1")
-        axs[0].plot(test_profile_2d.detach().numpy(), depth_output, color='royalblue', label=f"step 2")
-        axs[0].plot(testing_x_sx[:, 3:, :].squeeze().detach().numpy(), depth_output, color='midnightblue', label=f"step 3")
-        axs[0].plot(out_1_linear.squeeze(), depth_output, color='lightcoral', linestyle='--', label=f"linear interpolation 1")
-        axs[0].plot(out_2_linear.squeeze(), depth_output, color='firebrick', linestyle='--', label=f"linear interpolation 2")
-        axs[0].invert_yaxis()
-        axs[0].set_title('step 0-3 trend')
-        axs[0].legend(loc="lower left")
-        axs[1].plot(testing_x_dx[:, 0:1, :].squeeze().detach().numpy(), depth_output, color='lightsteelblue', label=f"step 3")
-        axs[1].plot(test_profile_1_d.detach().numpy(), depth_output, color='cornflowerblue', label=f"step 4")
-        axs[1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='royalblue', label=f"step 5")
-        axs[1].plot(testing_x_dx[:, 3:, :].squeeze().detach().numpy(), depth_output, color='midnightblue', label=f"step 6")
-        axs[1].plot(out_4_linear.squeeze(), depth_output, color='lightcoral', linestyle='--', label=f"linear interpolation 4")
-        axs[1].plot(out_5_linear.squeeze(), depth_output, color='firebrick', linestyle='--', label=f"linear interpolation 5")
-        axs[1].invert_yaxis()
-        axs[1].set_title('step 3-6 trend')
-        axs[1].legend(loc="lower left")
+        if paper_mode == False:
+            fig, axs = plt.subplots(1, 2, figsize=(14, 10))
+            axs[0].plot(testing_x_sx[:, 0:1, :].squeeze().detach().numpy(), depth_output, color='lightsteelblue', label=f"step 0")
+            axs[0].plot(test_profile_d.detach().numpy(), depth_output, color='cornflowerblue', label=f"step 1")
+            axs[0].plot(test_profile_2d.detach().numpy(), depth_output, color='royalblue', label=f"step 2")
+            axs[0].plot(testing_x_sx[:, 3:, :].squeeze().detach().numpy(), depth_output, color='midnightblue', label=f"step 3")
+            axs[0].plot(out_1_linear.squeeze(), depth_output, color='lightcoral', linestyle='--', label=f"linear interpolation 1")
+            axs[0].plot(out_2_linear.squeeze(), depth_output, color='firebrick', linestyle='--', label=f"linear interpolation 2")
+            axs[0].invert_yaxis()
+            axs[0].set_title('step 0-3 trend')
+            axs[0].legend(loc="lower left")
+            axs[1].plot(testing_x_dx[:, 0:1, :].squeeze().detach().numpy(), depth_output, color='lightsteelblue', label=f"step 3")
+            axs[1].plot(test_profile_1_d.detach().numpy(), depth_output, color='cornflowerblue', label=f"step 4")
+            axs[1].plot(test_profile_1_2d.detach().numpy(), depth_output, color='royalblue', label=f"step 5")
+            axs[1].plot(testing_x_dx[:, 3:, :].squeeze().detach().numpy(), depth_output, color='midnightblue', label=f"step 6")
+            axs[1].plot(out_4_linear.squeeze(), depth_output, color='lightcoral', linestyle='--', label=f"linear interpolation 4")
+            axs[1].plot(out_5_linear.squeeze(), depth_output, color='firebrick', linestyle='--', label=f"linear interpolation 5")
+            axs[1].invert_yaxis()
+            axs[1].set_title('step 3-6 trend')
+            axs[1].legend(loc="lower left")
+        elif paper_mode == True:
+            sns.set_theme(context='paper', style='whitegrid', font='sans-serif', font_scale=2.5, color_codes=True, rc=None)
+            fig, axs = plt.subplots(1, 2, figsize=(14, 10))
+            axs[0].plot(testing_x_sx[:, 0:1, :].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='lightsteelblue', label=f"step 0")
+            axs[0].plot(test_profile_d.detach().numpy(), depth_output, linewidth=2.5, color='cornflowerblue', label=f"step 1")
+            axs[0].plot(test_profile_2d.detach().numpy(), depth_output, linewidth=2.5, color='royalblue', label=f"step 2")
+            axs[0].plot(testing_x_sx[:, 3:, :].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='midnightblue', label=f"step 3")
+            axs[0].plot(out_1_linear.squeeze(), depth_output, linewidth=2.5, color='lightcoral', linestyle='--', label=f"linear interpolation 1")
+            axs[0].plot(out_2_linear.squeeze(), depth_output, linewidth=2.5, color='firebrick', linestyle='--', label=f"linear interpolation 2")
+            axs[0].invert_yaxis()
+            axs[0].set_title(r"[$t_0, t_0+\delta t$] step")
+            axs[0].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            axs[0].set_ylabel(r"depth [$m$]")
+            #axs[0].legend(loc="lower left")
+            axs[1].plot(testing_x_dx[:, 0:1, :].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='lightsteelblue', label=f"step 3")
+            axs[1].plot(test_profile_1_d.detach().numpy(), depth_output, linewidth=2.5, color='cornflowerblue', label=f"step 4")
+            axs[1].plot(test_profile_1_2d.detach().numpy(), depth_output, linewidth=2.5, color='royalblue', label=f"step 5")
+            axs[1].plot(testing_x_dx[:, 3:, :].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='midnightblue', label=f"step 6")
+            axs[1].plot(out_4_linear.squeeze(), depth_output, color='lightcoral', linewidth=2.5, linestyle='--', label=f"linear interpolation 4")
+            axs[1].plot(out_5_linear.squeeze(), depth_output, color='firebrick', linewidth=2.5, linestyle='--', label=f"linear interpolation 5")
+            axs[1].invert_yaxis()
+            axs[1].set_title(r"[$t_0+\delta t, t_0+2\delta t$] step")
+            axs[1].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            #axs[1].legend(loc="lower left")
 
         if split_timesteps == True:
             days = sample[2][0, :, 0].squeeze() 
@@ -403,12 +476,47 @@ def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_ave
         outputs_floats = [testing_x_sx[:, 1:2, :], testing_x_sx[:, 2:3, :], testing_x_dx[:, 1:2, :], testing_x_dx[:, 2:3, :]]
         outputs_linear = [out_1_linear, out_2_linear, out_4_linear, out_5_linear]
 
-        for l in range(len(outputs_1DUNet)):
-            plt.plot(outputs_1DUNet[l].detach().numpy(), depth_output, color='blue', label=f"1DUnet 1")
-            plt.plot(outputs_floats[l].squeeze().detach().numpy(), depth_output, color='red', label=f"ARGO-float 1")
-            plt.plot(outputs_linear[l].squeeze(), depth_output, color='orange', label=f"Linear interpolation 1")
-            plt.gca().invert_yaxis()
-            plt.legend(loc="lower left")
-            plt.savefig(dir_single_comparison + f"/prediction_{save_dir_indexes[l]}/profile_{var[:,0:1, 0:1].item()}.png")
+        if paper_mode == False:
+            for l in range(len(outputs_1DUNet)):
+                sns.set_theme(context='paper', style='whitegrid', font='sans-serif', font_scale=2.5, color_codes=True, rc=None)
+                plt.figure(figsize=(8, 10))
+                plt.plot(outputs_1DUNet[l].detach().numpy(), depth_output, linewidth=2.5, color='blue', label=f"1DUnet 1")
+                plt.plot(outputs_floats[l].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='red', label=f"ARGO-float 1")
+                plt.plot(outputs_linear[l].squeeze(), depth_output, linewidth=2.5, color='orange', label=f"Linear interpolation 1")
+                plt.gca().invert_yaxis()
+                plt.xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+                plt.ylabel(r"depth [$m$]")
+                plt.savefig(dir_single_comparison + f"/prediction_{save_dir_indexes[l]}/profile_{var[:,0:1, 0:1].item()}.png")
+                plt.close()
+
+        if paper_mode == True:
+            sns.set_theme(context='paper', style='whitegrid', font='sans-serif', font_scale=2.5, color_codes=True, rc=None)
+            fig, axs = plt.subplots(1, 4, figsize=(30, 10))
+            axs[0].plot(outputs_1DUNet[0].detach().numpy(), depth_output, linewidth=2.5, color='blue', label=f"1DUnet 1")
+            axs[0].plot(outputs_floats[0].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='red', label=f"ARGO-float 1")
+            axs[0].plot(outputs_linear[0].squeeze(), depth_output, linewidth=2.5, color='orange', label=f"Linear interpolation 1")
+            axs[0].invert_yaxis()
+            axs[0].set_title(r"$x_{t_0+{\frac{\delta t}{3}}}$", fontsize=36)
+            axs[0].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            axs[0].set_ylabel(r"depth [$m$]")
+            axs[1].plot(outputs_1DUNet[1].detach().numpy(), depth_output, linewidth=2.5, color='blue', label=f"1DUnet 1")
+            axs[1].plot(outputs_floats[1].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='red', label=f"ARGO-float 1")
+            axs[1].plot(outputs_linear[1].squeeze(), depth_output, linewidth=2.5, color='orange', label=f"Linear interpolation 1")
+            axs[1].invert_yaxis()
+            axs[1].set_title(r"$x_{t_0+{\frac{2\delta t}{3}}}$", fontsize=36)
+            axs[1].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            axs[2].plot(outputs_1DUNet[2].detach().numpy(), depth_output, linewidth=2.5, color='blue', label=f"1DUnet 1")
+            axs[2].plot(outputs_floats[2].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='red', label=f"ARGO-float 1")
+            axs[2].plot(outputs_linear[2].squeeze(), depth_output, linewidth=2.5, color='orange', label=f"Linear interpolation 1")
+            axs[2].invert_yaxis()
+            axs[2].set_title(r"$x_{t_0+{\frac{4\delta t}{3}}}$", fontsize=36)
+            axs[2].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            axs[3].plot(outputs_1DUNet[3].detach().numpy(), depth_output, linewidth=2.5, color='blue', label=f"1DUnet 1")
+            axs[3].plot(outputs_floats[3].squeeze().detach().numpy(), depth_output, linewidth=2.5, color='red', label=f"ARGO-float 1")
+            axs[3].plot(outputs_linear[3].squeeze(), depth_output, linewidth=2.5, color='orange', label=f"Linear interpolation 1")
+            axs[3].invert_yaxis()
+            axs[3].set_title(r"$x_{t_0+{\frac{5\delta t}{3}}}$", fontsize=36)
+            axs[3].set_xlabel(f"{variable}" r"[$mg \ m^{-3}$]")
+            plt.savefig(dir_single_comparison + f"/sequence_{var[:,0:1, 0:1].item()}.png", dpi=400)
             plt.close()
 
