@@ -336,6 +336,9 @@ def plot_NN_intermediate_profiles(ds, dir, variable, ep=100, mov_average=False, 
 
 
 
+
+
+
 def linear_interpolation_comparison(ds, dir, variable, exp_mode, ep=100, mov_average=False, split_timesteps=False, paper_mode=False):
     dir_model = dir + "/model"
     dir_profile = dir + "/linear_interpolation_comparison" if paper_mode == False else dir + "/linear_interpolation_comparison_paper"
